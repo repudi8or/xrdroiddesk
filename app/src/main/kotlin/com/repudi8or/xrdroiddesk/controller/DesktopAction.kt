@@ -5,4 +5,10 @@ sealed class DesktopAction {
         val x: Float,
         val y: Float,
     ) : DesktopAction()
+
+    data class Swipe(
+        val direction: SwipeDirection,
+    ) : DesktopAction()
 }
+
+enum class SwipeDirection { Left, Right }

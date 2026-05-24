@@ -10,76 +10,53 @@ When XReal glasses are plugged into the Pixel 10 Pro via USB-C, Android prompts 
 
 ## Target Hardware
 
-- **Glasses**: XReal One Pro (primary), extensible to other XReal/NRSDK-compatible glasses
+- **Glasses**: XReal One Pro (primary), extensible to other UVC-capable glasses
 - **Phone**: Google Pixel 10 Pro (primary), extensible to any Android phone supporting desktop mode
 - **Mac** *(stretch goal)*: MacBook — glasses connect via USB-C; macOS control via a companion Mac app
-- **Connection**: USB-C or wireless depending on XReal SDK support
+- **Connection**: USB-C
+- **Required app on phone**: [Control Glasses](https://play.google.com/store/apps/details?id=ai.nreal.controlglasses) — must be installed and **UVC mode enabled** (toggle in app settings: "enable uvc mode to stream RGB camera data from the glasses")
 
 ## Key SDKs & Dependencies
 
-- **Android SDK** — minSdk 29 required by XREAL SDK; targetSdk latest stable
-- **XREAL SDK 3.1.0** (current, replaces NRSDK) — spatial computing, hand tracking, gesture recognition
-  - Docs: https://docs.xreal.com
-  - Download: https://developer.xreal.com/download
-  - **Important:** XREAL SDK 3.x is Unity-only (Unity 2021.3+, XR Plugin umbrella). Native Android path is unclear — may require staying on NRSDK or contacting XReal developer support.
-- **NRSDK (legacy, still documented)** — older proprietary Android SDK; same hand tracking API surface but not actively developed
-  - Docs: https://xreal.gitbook.io/nrsdk
-  - Migration guide: https://docs.xreal.com/MigratingFromNRSDKToXREALSDK/intro
+- **Android SDK** — minSdk 29; targetSdk 35
+- **XREAL SDK 3.1.0 / NRSDK** — both Unity-only; no native Android AAR published. Not used in this project.
+- **MediaPipe Tasks Vision** (`com.google.mediapipe:tasks-vision`) — on-device ML hand landmarking (21 joints) from camera frames. Used to convert UVC frames into `HandData`.
+- **Jetpack XR** (`androidx.xr.*`) — Google's Android XR SDK supporting hand tracking on Android XR headsets (e.g., Samsung Galaxy XR). Not applicable to XReal glasses connected to a standard Android phone.
+- **Kotlinx Coroutines** (`kotlinx-coroutines-android`) — async UVC frame reading loop.
 
-### Hand Tracking API (NRSDK / XREAL SDK)
+## XReal One Pro UVC Camera Access
 
-**Core classes:**
+The XReal One Pro exposes its built-in RGB cameras as standard **UVC (USB Video Class)** devices when UVC mode is enabled via the **Control Glasses** app. This is the hand-tracking camera source for this project.
 
-| Class | Purpose |
+**One-time setup:** Open "Control Glasses" on the phone → enable the UVC toggle ("enable uvc mode to stream RGB camera data from the glasses").
+
+**USB device details** (discovered via ADB while glasses connected):
+
+| Field | Value |
 |---|---|
-| `NRInput` | Main input manager; switch between hand and controller modes |
-| `NRHand` | Represents one hand (left or right) |
-| `HandState` | Per-frame snapshot of a hand's tracking data |
-| `HandJointID` | Enum of 23 tracked joint points |
+| Manufacturer | XREAL |
+| Product | XREAL One Pro |
+| Vendor ID | `0x3318` (13080 decimal) |
+| Product ID | `0x0436` (1078 decimal) |
+| USB path | `/dev/bus/usb/001/003` |
+| Configuration | `hid+ncm+ecm+uac1+uvc_bulk_15_xreal0+uvc_bulk_15_xreal1` |
+| UVC interfaces | class=14/subclass=1 (VideoControl) + class=14/subclass=2 (VideoStreaming) × 2 |
 
-**Key methods & properties:**
+**Two stereo UVC cameras:** `xreal0` and `xreal1` (bulk transfer, ~15 fps). Either stream works for hand landmarking.
 
-```csharp
-// Switch to hand tracking input
-NRInput.SetInputSource(InputSourceEnum.Hands); // InputSourceEnum: Hands | Controller
+**Access method:** Android USB Host API (`UsbManager.getDeviceList()` → `UsbDeviceConnection.bulkTransfer()`). The camera does **not** appear in the Camera2 API — it must be opened directly via USB Host. Implemented in `XRealGlassesCamera`.
 
-// Check tracking state
-bool active = NRInput.Hands.IsRunning;
-bool systemGesture = NRInput.Hands.IsPerformingSystemGesture();
+**UVC frame acquisition flow:**
+1. Find device by VID/PID via `UsbManager`
+2. Claim VideoStreaming interface (class=14, subclass=2)
+3. `VS_PROBE_CONTROL` GET_CUR → SET_CUR to negotiate format
+4. `VS_COMMIT_CONTROL` SET_CUR to commit
+5. `bulkTransfer()` loop; parse 2-byte UVC payload header (FID toggle, EOF bit) to assemble MJPEG frames
+6. `BitmapFactory.decodeByteArray()` → `BitmapImageBuilder(bitmap).build()` → MediaPipe `MPImage`
 
-// Get per-hand state (HandEnum: RightHand | LeftHand)
-HandState state = NRInput.Hands.GetHandState(HandEnum.RightHand);
+**First connection:** Android shows a one-time USB permission dialog for the app. Permission is stored per-app.
 
-bool   isTracked     = state.isTracked;
-bool   isPinching    = state.isPinching;
-float  pinchStrength = state.pinchStrength;   // 0.0 – 1.0
-var    gesture       = state.currentGesture;  // HandGesture enum (6 types)
-Pose   pointer       = state.pointerPose;
-bool   pointerValid  = state.pointerPoseValid;
-
-// Get pose of a specific joint
-Pose thumbTip  = state.GetJointPose(HandJointID.ThumbTip);
-Pose indexTip  = state.GetJointPose(HandJointID.IndexTip);
-```
-
-**HandJointID enum — 23 joints tracked:**
-Wrist, Palm, ThumbMetacarpal, ThumbProximal, ThumbDistal, ThumbTip,
-IndexProximal, IndexMiddle, IndexDistal, IndexTip,
-MiddleProximal, MiddleMiddle, MiddleDistal, MiddleTip,
-RingProximal, RingMiddle, RingDistal, RingTip,
-PinkyMetacarpal, PinkyProximal, PinkyMiddle, PinkyDistal, PinkyTip
-
-**HandGesture enum — 6 recognized poses** (exact names TBD from API reference; confirmed types include):
-- Pinch/Select — index + thumb contact (any other finger pose counts)
-- System gesture — hold 1.2 s to invoke home menu
-- Open palm, thumbs-up, grab, and others (confirm from full enum)
-
-**XREAL SDK 3.x interaction model (Unity):**
-- `Poke Interactor` — index fingertip-driven contact interaction
-- `Near-Far Interactor` — seamless close/distant interaction transitions
-- `Teleport Interactor` — far-field / indirect input
-
-**XRI integration:** Edit > Project Settings > XR Plug-in Management > XREAL, set Input source = Hands
+**`android.hardware.usb.host` feature required** in manifest; no `CAMERA` permission needed (USB Host path bypasses Camera2).
 
 ## Cross-Platform Hand Gesture Abstraction
 
@@ -137,38 +114,47 @@ Higher-level interaction framework; XREAL SDK explicitly supports MRTK3 integrat
 
 ### Abstraction recommendation for this project
 
-This project uses **native Kotlin + NRSDK** (not Unity), so the relevant layers are:
+This project uses **native Kotlin + UVC + MediaPipe** (not Unity, not NRSDK). The relevant layers are:
 
 ```
-NRSDK (XReal-specific, native Android)
+UVC camera (XReal-specific, via USB Host API)
         |
-GestureRecognizer (KMP shared module)  ← raw joints → named gestures
+XRealGlassesCamera + HandLandmarkerHelper  ← MJPEG frames → HandData
         |
-GestureActionMapper (KMP shared module) ← named gestures → abstract actions
+GestureRecognizer  ← raw HandData → named gestures
+        |
+GestureActionDispatcher  ← named gestures → DesktopAction
         |
 DesktopController (platform-specific)  ← Android AccessibilityService / macOS CGEvent
 ```
 
-To support other glasses in future: swap NRSDK for OpenXR via the Android NDK OpenXR loader — the shared KMP gesture logic above it stays untouched.
+To support other glasses in future: replace `XRealGlassesCamera` (the only XReal-specific class) with a different camera source. Everything above it is camera-agnostic.
 
-## Architecture (planned)
+## Architecture (implemented)
 
 ```
-XReal Glasses
+XReal One Pro glasses — USB-C, UVC mode on
         |
         v
-NRSDKHandTracker (Android, Kotlin)
-        |  joint poses + pinch data
+XRealGlassesCamera          UVC bulk frames (MJPEG)
+        |
         v
-GestureRecognizer (KMP shared module)
-        |  named gestures: Pinch, Swipe, Palm, Fist, …
+HandLandmarkerHelper        MediaPipe 21-joint hand landmarker
+        |                   → HandData(isTracked, pinchStrength, pointerPose)
         v
-GestureActionMapper (KMP shared module)
-        |  abstract actions: Click, RightClick, Scroll, Drag, …
+HandTrackingPipeline        orchestrates camera + landmarker
+        |
         v
-DesktopController
-  ├── AndroidDesktopController → AccessibilityService
-  └── MacDesktopController (stretch) → CGEvent / AXUIElement
+GestureRecognizer           Pinch / SwipeLeft / SwipeRight
+        |
+        v
+GestureActionDispatcher     DesktopAction.Click / …
+        |
+        v
+AccessibilityDesktopController
+        |
+        v
+GestureAccessibilityService.dispatchGesture()
 ```
 
 ## Gesture → Desktop Action Mapping (initial targets)
@@ -203,11 +189,12 @@ The glasses connect to the Mac via USB-C; a native Mac companion app (Swift/Swif
 
 XREAL SDK 3.x is Unity-only, but `AccessibilityService` is a native Android component that must be declared in the manifest and run as a persistent background service. Unity controls the process lifecycle and manifest, making a well-behaved Android background service very difficult. Unity is the wrong tool for a system-level input-injection app.
 
-### Chosen approach: Native Android (Kotlin + NRSDK) → Kotlin Multiplatform for Mac
+### Chosen approach: Native Android (Kotlin + UVC + MediaPipe) → Kotlin Multiplatform for Mac
 
 **Phase 1 — Native Android**
 - Language: Kotlin
-- XReal SDK: NRSDK (native Android, legacy but fully functional)
+- Camera input: Android USB Host API → XReal UVC camera (no proprietary SDK)
+- Hand tracking: MediaPipe Tasks Vision (`HandLandmarker`, 21 joints)
 - Desktop control: `AccessibilityService` (natural fit in native Kotlin)
 - Build: Gradle, Android Studio
 
@@ -221,15 +208,17 @@ Each platform keeps its own input injection:
 
 ```
 shared/ (KMP module — Kotlin)
-  GestureRecognizer       ← raw joint data → named gestures
-  GestureActionMapper     ← named gestures → abstract desktop actions
+  GestureRecognizer       ← HandData → named gestures
+  GestureActionDispatcher ← named gestures → abstract desktop actions
 
 androidApp/ (Kotlin)
-  NRSDKHandTracker        ← NRSDK → joint data → shared module
-  AndroidDesktopController← AccessibilityService input injection
+  XRealGlassesCamera      ← USB Host API → UVC frames
+  HandLandmarkerHelper    ← MediaPipe → HandData
+  HandTrackingPipeline    ← orchestrates above → GestureRecognizer
+  AccessibilityDesktopController ← AccessibilityService input injection
 
 macosApp/ (Swift + KMP interop)
-  XRealHandTracker        ← NRSDK/OpenXR → joint data → shared module
+  XRealUvcCamera          ← IOKit USB → UVC frames
   MacDesktopController    ← CGEvent / AXUIElement input injection
 ```
 
@@ -242,8 +231,18 @@ macosApp/ (Swift + KMP interop)
 
 ## Build Setup
 
-- **Phase 1 — Android app**: Kotlin, Gradle, Android Studio, NRSDK
+- **Phase 1 — Android app**: Kotlin, Gradle, Android Studio, MediaPipe Tasks Vision, Android USB Host API
 - **Phase 2 — KMP shared module + macOS companion**: Kotlin Multiplatform, Swift/SwiftUI, Xcode
+
+### Model file
+
+MediaPipe requires `hand_landmarker.task` (~6 MB) in `app/src/main/assets/`. Not committed to git. Download once:
+
+```bash
+make download-model
+```
+
+(Makefile target fetches from `storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task`)
 
 ## Git Workflow
 
@@ -373,12 +372,15 @@ Android Studio Device Mirroring (Hedgehog+) streams the Pixel screen directly in
 
 ## Development Notes
 
-- XReal One Pro requires the phone to be connected via USB-C; test on physical device only (no emulator for XR input)
-- On connect, Android prompts Mirror or Desktop — the user must select **Desktop mode**; this app targets that mode exclusively
+- XReal One Pro requires USB-C connection to phone; test on physical device only (no emulator for UVC input)
+- On connect, Android prompts Mirror or Desktop — user must select **Desktop mode**; this app targets that mode exclusively
 - Android Desktop mode on Pixel 10 Pro may need developer options enabled (Settings > Developer options > Force desktop mode)
 - In Desktop mode, the glasses display an independent windowed environment separate from the phone's touchscreen
 - AccessibilityService must be declared in manifest and enabled by user in Settings > Accessibility
+- **Control Glasses app must be installed** and UVC mode toggled on before camera access works
+- First launch triggers a one-time USB permission dialog for the XReal device (VID=0x3318, PID=0x0436)
 - Hand tracking accuracy and latency will be a primary UX concern
+- The glasses camera points forward (eye-level view of user's hands) — ideal geometry for gesture detection
 
 ## Useful References
 

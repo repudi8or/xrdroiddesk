@@ -6,10 +6,26 @@ AVD        := xrdroiddesk_desktop_api34
 APP_ID     := com.repudi8or.xrdroiddesk
 ACTIVITY   := $(APP_ID)/.MainActivity
 APK        := app/build/outputs/apk/debug/app-debug.apk
+MODEL_URL  := https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
+MODEL_DIR  := app/src/main/assets
+MODEL_FILE := $(MODEL_DIR)/hand_landmarker.task
 
 export JAVA_HOME
 
 .DEFAULT_GOAL := help
+
+# ── Setup ────────────────────────────────────────────────────────────────────
+
+.PHONY: download-model
+download-model:  ## Download MediaPipe hand_landmarker.task into assets/
+	@mkdir -p $(MODEL_DIR)
+	@if [ -f "$(MODEL_FILE)" ]; then \
+	  echo "Model already present: $(MODEL_FILE)"; \
+	else \
+	  echo "Downloading hand_landmarker.task..."; \
+	  curl -L -o "$(MODEL_FILE)" "$(MODEL_URL)"; \
+	  echo "Saved to $(MODEL_FILE)"; \
+	fi
 
 # ── Build ────────────────────────────────────────────────────────────────────
 

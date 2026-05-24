@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    USB device filter for XReal One Pro glasses in UVC mode.
+    VID 13080 = 0x3318, PID 1078 = 0x0436 (discovered via ADB dumpsys usb).
+    Requires "Control Glasses" app with UVC mode enabled on the phone.
+-->
+<resources>
+    <usb-device
+        vendor-id="13080"
+        product-id="1078" />
+</resources>

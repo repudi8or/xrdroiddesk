@@ -1,0 +1,62 @@
+package com.repudi8or.xrdroiddesk.camera
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
+import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import com.repudi8or.xrdroiddesk.gesture.HandData
+
+class HandLandmarkerHelper(
+    context: Context,
+    private val onHandData: (HandData) -> Unit,
+) {
+    private val landmarker: HandLandmarker
+
+    init {
+        val baseOptions =
+            BaseOptions
+                .builder()
+                .setModelAssetPath(MODEL_ASSET)
+                .build()
+        val options =
+            HandLandmarker.HandLandmarkerOptions
+                .builder()
+                .setBaseOptions(baseOptions)
+                .setNumHands(1)
+                .setMinHandDetectionConfidence(0.5f)
+                .setMinHandPresenceConfidence(0.5f)
+                .setMinTrackingConfidence(0.5f)
+                .setRunningMode(RunningMode.LIVE_STREAM)
+                .setResultListener { result, _ -> onHandData(result.toHandData()) }
+                .build()
+        landmarker = HandLandmarker.createFromOptions(context, options)
+    }
+
+    fun processJpegFrame(
+        jpegBytes: ByteArray,
+        timestampMs: Long,
+    ) {
+        val bitmap: Bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return
+        val mpImage = BitmapImageBuilder(bitmap).build()
+        landmarker.detectAsync(mpImage, timestampMs)
+    }
+
+    fun close() = landmarker.close()
+
+    companion object {
+        private const val MODEL_ASSET = "hand_landmarker.task"
+    }
+}
+
+private fun HandLandmarkerResult.toHandData(): HandData {
+    val tracked = landmarks().isNotEmpty()
+    if (!tracked) return HandData(isTracked = false, pinchStrength = 0f, pointerPose = null)
+
+    val imageList = landmarks()[0].map { Triple(it.x(), it.y(), it.z()) }
+    val worldList = worldLandmarks()[0].map { Triple(it.x(), it.y(), it.z()) }
+    return landmarkToHandData(isTracked = true, worldLandmarks = worldList, imageLandmarks = imageList)
+}

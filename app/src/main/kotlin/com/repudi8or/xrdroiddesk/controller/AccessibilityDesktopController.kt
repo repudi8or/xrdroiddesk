@@ -11,6 +11,7 @@ class AccessibilityDesktopController(
     override fun perform(action: DesktopAction) {
         when (action) {
             is DesktopAction.Click -> dispatchClick(action.x, action.y)
+            is DesktopAction.Swipe -> Log.d(TAG, "Swipe ${action.direction} — window switching not yet implemented")
         }
     }
 
