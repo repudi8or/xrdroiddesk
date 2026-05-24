@@ -319,6 +319,58 @@ pre-commit run               # run against staged files only
 ./gradlew ktlintFormat       # auto-fix
 ```
 
+## Local Dev Commands
+
+All common tasks are wrapped in the `Makefile` with `JAVA_HOME` pre-set. Run `make help` for the full list.
+
+```bash
+make build             # assemble debug APK
+make check             # unit tests + ktlint (CI gate)
+make test              # unit tests only
+make lint / make fmt   # ktlint check / auto-fix
+make install           # build + adb install
+make run               # install + launch MainActivity
+make logcat            # filtered logcat for this app
+make emulator          # start desktop AVD in background
+make desktop-mode      # enable freeform windowing then reboot device
+make adb-wifi-enable   # switch Pixel to TCP/IP (run once, plugged in)
+make adb-wifi-connect DEVICE_IP=192.168.x.x
+make accessibility-check  # verify service is enabled on device
+```
+
+## Emulator Setup (M1 Mac)
+
+The Android Emulator is already installed (`emulator 36.5.10`). No separate install needed.
+
+**AVD:** `xrdroiddesk_desktop_api34`
+- System image: `android-34;android-desktop;arm64-v8a` — purpose-built Desktop mode image
+- Device profile: `desktop_medium`
+- Lives in `~/.android/avd/` (not committed to git)
+
+**First-time emulator workflow:**
+```bash
+make emulator          # starts AVD in background, wait ~30s
+make desktop-mode      # applies freeform settings + reboots emulator
+make install           # deploy APK
+make run               # launch app
+# Enable service: Settings > Accessibility > xrdroiddesk
+make accessibility-check  # confirm it's enabled
+```
+
+## Physical Device Workflow (ADB over WiFi)
+
+```bash
+# Once, while Pixel is plugged in via USB:
+make adb-wifi-enable
+
+# Then unplug and connect wirelessly:
+make adb-wifi-connect DEVICE_IP=192.168.x.x
+
+# All make targets (install, run, logcat) work over WiFi from here
+```
+
+Android Studio Device Mirroring (Hedgehog+) streams the Pixel screen directly into the IDE over ADB — useful for watching Desktop mode output without looking at the phone.
+
 ## Development Notes
 
 - XReal One Pro requires the phone to be connected via USB-C; test on physical device only (no emulator for XR input)
