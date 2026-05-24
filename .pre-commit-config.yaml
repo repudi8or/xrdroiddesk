@@ -11,13 +11,12 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=500']
 
-  # Kotlin linting via ktlint
-  # Activated once the Android Gradle project is initialised.
-  # Requires: brew install ktlint  OR  gradle ktlintInstallGitPreCommitHook
-  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.14.0
+  # Kotlin linting via ktlint (runs ./gradlew ktlintCheck on staged .kt files)
+  - repo: local
     hooks:
-      - id: pretty-format-kotlin
-        args: [--autofix]
-        # Remove the 'exclude' line once the Gradle project exists
-        exclude: '^$'
+      - id: ktlint
+        name: ktlint
+        language: system
+        entry: bash -c 'JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew ktlintCheck --quiet'
+        files: \.kt$
+        pass_filenames: false
