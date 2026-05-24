@@ -3,6 +3,7 @@ package com.repudi8or.xrdroiddesk.controller
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
+import android.util.Log
 
 class AccessibilityDesktopController(
     private val service: AccessibilityService,
@@ -20,10 +21,12 @@ class AccessibilityDesktopController(
         val path = Path().apply { moveTo(x, y) }
         val stroke = GestureDescription.StrokeDescription(path, 0L, TAP_DURATION_MS)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
-        service.dispatchGesture(gesture, null, null)
+        val dispatched = service.dispatchGesture(gesture, null, null)
+        Log.d(TAG, "dispatchGesture($x, $y) → $dispatched")
     }
 
     companion object {
         private const val TAP_DURATION_MS = 50L
+        private const val TAG = "DesktopController"
     }
 }
