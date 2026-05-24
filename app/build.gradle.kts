@@ -43,6 +43,12 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -72,4 +78,6 @@ dependencies {
     testImplementation(libs.junit5.api)
     testRuntimeOnly(libs.junit5.engine)
     testImplementation(libs.mockk)
+
+    androidTestImplementation(libs.mockk.android)
 }
