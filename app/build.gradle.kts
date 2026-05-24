@@ -1,9 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.android.junit5)
 }
+
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) load(file.inputStream())
+    }
 
 android {
     namespace = "com.repudi8or.xrdroiddesk"
@@ -15,6 +23,18 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // Expose local.properties values as BuildConfig constants.
+        // Add new fields here as keys are introduced in local.properties.
+        buildConfigField(
+            "String",
+            "NRSDK_LICENSE_KEY",
+            "\"${localProperties["nrsdk.license.key"] ?: ""}\"",
+        )
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -46,7 +66,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
 
-    // NRSDK will be added here once the AAR is sourced from developer.xreal.com/download
+    // NRSDK — add once AAR is downloaded from developer.xreal.com/download
     // implementation(files("libs/nrsdk.aar"))
 
     testImplementation(libs.junit5.api)

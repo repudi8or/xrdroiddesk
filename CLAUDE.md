@@ -261,6 +261,36 @@ macosApp/ (Swift + KMP interop)
 - Test coverage targets: gesture recognition logic (unit), gesture→action mapping (unit), AccessibilityService injection (instrumented)
 - No PR merged to `main` without corresponding tests for new behaviour
 
+## Local Environment Configuration
+
+Environment-specific values (SDK keys, feature flags, device settings) are stored in `local.properties` — the Android community standard. No extra library required; values are read at build time via `java.util.Properties` in `app/build.gradle.kts` and exposed as `BuildConfig` constants.
+
+**Setup (one-time per machine):**
+```bash
+cp local.properties.example local.properties
+# Edit local.properties and fill in your values
+```
+
+`local.properties` is git-ignored and must never be committed. `local.properties.example` is the committed template showing all available keys.
+
+**Adding a new config value:**
+1. Add the key to `local.properties.example` with a comment explaining it
+2. Add your real value to your local `local.properties`
+3. Add a `buildConfigField(...)` entry in `app/build.gradle.kts` under `defaultConfig`
+4. Access it in code as `BuildConfig.YOUR_KEY_NAME`
+
+**Example — reading a value in Kotlin:**
+```kotlin
+val licenseKey = BuildConfig.NRSDK_LICENSE_KEY
+```
+
+**Current keys:**
+
+| Key | BuildConfig field | Purpose |
+|---|---|---|
+| `sdk.dir` | *(build system only)* | Android SDK path — set automatically by Android Studio |
+| `nrsdk.license.key` | `NRSDK_LICENSE_KEY` | XReal NRSDK license (obtain from developer.xreal.com) |
+
 ## Linting & Pre-Commit Hooks
 
 Pre-commit hooks are managed via the [`pre-commit`](https://pre-commit.com) framework. Config: `.pre-commit-config.yaml`.

@@ -1,0 +1,16 @@
+# Copy this file to local.properties and fill in your values.
+# local.properties is git-ignored and must never be committed.
+
+# Android SDK path — Android Studio sets this automatically.
+sdk.dir=/Users/your-username/Library/Android/sdk
+
+# ---------------------------------------------------------------------------
+# Test / dev environment values
+# Add project-specific keys below as they are introduced.
+# ---------------------------------------------------------------------------
+
+# Example: NRSDK license key (obtain from developer.xreal.com)
+# nrsdk.license.key=YOUR_KEY_HERE
+
+# Example: feature flags for local development
+# dev.mock.gestures=false
