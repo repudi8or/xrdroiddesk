@@ -2,4 +2,8 @@
 <resources>
     <string name="app_name">xrdroiddesk</string>
     <string name="accessibility_service_description">Controls Android Desktop with XReal hand gestures</string>
+    <string name="debug_click_button">Debug: Inject Click (500, 500)</string>
+    <string name="service_status_disconnected">AccessibilityService: not connected</string>
+    <string name="service_status_connected">AccessibilityService: connected</string>
+    <string name="service_status_click_sent">Click dispatched to (500, 500)</string>
 </resources>
