@@ -1,0 +1,26 @@
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+
+# KMP / Kotlin Native
+.kotlin/
+kotlinNative/
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Pre-commit cache
+.pre-commit-cache/
