@@ -60,5 +60,6 @@ class XRealGlassesCameraTest {
         mockk<UsbDevice>().also {
             every { it.vendorId } returns vendorId
             every { it.productId } returns productId
+            every { it.deviceName } returns "/dev/bus/usb/001/001"
         }
 }

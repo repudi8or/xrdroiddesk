@@ -19,6 +19,20 @@
         android:layout_height="wrap_content"
         android:text="@string/debug_click_button" />
 
+    <Button
+        android:id="@+id/btnRequestUsbPermission"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_request_usb_permission" />
+
+    <Button
+        android:id="@+id/btnEnableUvc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Enable UVC" />
+
     <TextView
         android:id="@+id/tvServiceStatus"
         android:layout_width="wrap_content"

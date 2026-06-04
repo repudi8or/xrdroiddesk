@@ -1,10 +1,6 @@
 package com.repudi8or.xrdroiddesk.camera
 
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
@@ -37,7 +33,6 @@ class XRealGlassesCamera(
         const val PRODUCT_ID = 0x0436
 
         private const val TAG = "XRealGlassesCamera"
-        private const val ACTION_USB_PERMISSION = "com.repudi8or.xrdroiddesk.USB_PERMISSION"
         private const val UVC_CLASS = 14
         private const val UVC_STREAMING_SUBCLASS = 2
         private const val UVC_SET_CUR: Byte = 0x01
@@ -52,50 +47,32 @@ class XRealGlassesCamera(
         private const val BFH_ERR = 0x40
     }
 
-    fun findDevice(): UsbDevice? =
-        usbManager.deviceList.values.firstOrNull {
-            it.vendorId == VENDOR_ID && it.productId == PRODUCT_ID
+    fun findDevice(): UsbDevice? {
+        val devices = usbManager.deviceList
+        Log.d(TAG, "USB devices present: ${devices.size}")
+        devices.values.forEach { d ->
+            Log.d(TAG, "  ${d.deviceName} VID=0x${d.vendorId.toString(16)} PID=0x${d.productId.toString(16)}")
         }
-
-    fun requestPermission(
-        context: Context,
-        device: UsbDevice,
-        onGranted: () -> Unit,
-        onDenied: () -> Unit,
-    ) {
-        if (usbManager.hasPermission(device)) {
-            onGranted()
-            return
-        }
-        val pi =
-            PendingIntent.getBroadcast(
-                context,
-                0,
-                Intent(ACTION_USB_PERMISSION),
-                PendingIntent.FLAG_IMMUTABLE,
-            )
-        val receiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(
-                    ctx: Context,
-                    intent: Intent,
-                ) {
-                    context.unregisterReceiver(this)
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        onGranted()
-                    } else {
-                        onDenied()
-                    }
-                }
-            }
-        context.registerReceiver(receiver, IntentFilter(ACTION_USB_PERMISSION), Context.RECEIVER_NOT_EXPORTED)
-        usbManager.requestPermission(device, pi)
+        return devices.values.firstOrNull { it.vendorId == VENDOR_ID && it.productId == PRODUCT_ID }
     }
+
+    fun hasPermission(device: UsbDevice): Boolean = usbManager.hasPermission(device)
 
     fun open(device: UsbDevice): Boolean {
         val iface =
             findStreamingInterface(device) ?: run {
-                Log.e(TAG, "No UVC VideoStreaming interface on device")
+                val hasAnyVideoIface =
+                    (0 until device.interfaceCount)
+                        .any { device.getInterface(it).interfaceClass == UVC_CLASS }
+                if (hasAnyVideoIface) {
+                    Log.e(TAG, "VideoControl interface found but no VideoStreaming interface")
+                } else {
+                    Log.e(
+                        TAG,
+                        "No UVC interfaces at all — UVC mode is OFF in Control Glasses. " +
+                            "Open Control Glasses, enable the UVC toggle, then replug the glasses.",
+                    )
+                }
                 return false
             }
         val conn =
@@ -138,13 +115,23 @@ class XRealGlassesCamera(
     }
 
     private fun findStreamingInterface(device: UsbDevice): UsbInterface? {
+        Log.d(TAG, "Device has ${device.interfaceCount} interfaces:")
         for (i in 0 until device.interfaceCount) {
             val iface = device.getInterface(i)
-            if (iface.interfaceClass == UVC_CLASS && iface.interfaceSubclass == UVC_STREAMING_SUBCLASS) {
-                return iface
-            }
+            val epSummary =
+                (0 until iface.endpointCount).joinToString {
+                    val ep = iface.getEndpoint(it)
+                    "ep$it(type=${ep.type} dir=${ep.direction})"
+                }
+            Log.d(
+                TAG,
+                "  [$i] class=${iface.interfaceClass} sub=${iface.interfaceSubclass}" +
+                    " proto=${iface.interfaceProtocol} eps=$epSummary",
+            )
         }
-        return null
+        return (0 until device.interfaceCount)
+            .map { device.getInterface(it) }
+            .firstOrNull { it.interfaceClass == UVC_CLASS && it.interfaceSubclass == UVC_STREAMING_SUBCLASS }
     }
 
     private fun findBulkInEndpoint(iface: UsbInterface): UsbEndpoint? {

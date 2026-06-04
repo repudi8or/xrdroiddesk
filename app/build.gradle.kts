@@ -49,6 +49,14 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // MediaPipe .so is not 16KB page-aligned; extract to disk on install
+            // instead of mmap-ing directly from the APK (which needs alignment).
+            useLegacyPackaging = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21

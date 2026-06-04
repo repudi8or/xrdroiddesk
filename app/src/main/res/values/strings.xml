@@ -6,4 +6,7 @@
     <string name="service_status_disconnected">AccessibilityService: not connected</string>
     <string name="service_status_connected">AccessibilityService: connected</string>
     <string name="service_status_click_sent">Click dispatched to (500, 500)</string>
+    <string name="btn_request_usb_permission">Request USB Permission (unplug first!)</string>
+    <string name="usb_permission_granted">USB permission granted — camera opening</string>
+    <string name="usb_permission_denied">USB permission denied — see logcat</string>
 </resources>

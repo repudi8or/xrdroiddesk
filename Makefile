@@ -118,6 +118,22 @@ accessibility-check:  ## Check if GestureAccessibilityService is enabled on devi
 	  | grep --color=always xrdroiddesk \
 	  || echo "Service NOT enabled — go to Settings > Accessibility > xrdroiddesk"
 
+.PHONY: usb-permission-status
+usb-permission-status:  ## Show USB device permissions and default app for XReal glasses
+	@echo "=== Full USB permissions_manager section ==="
+	@$(ADB) shell dumpsys usb | grep -A 20 "permissions_manager"
+	@echo ""
+	@echo "=== Apps registered for XReal device (VID=13080/PID=1078) ==="
+	@$(ADB) shell dumpsys usb | grep -B 5 "vendor_id=13080" | grep "package_name" || echo "  (none)"
+	@echo ""
+	@echo "=== All USB-registered apps (wildcard / any vendor) ==="
+	@$(ADB) shell dumpsys usb | grep -B 3 "vendor_id=-1" | grep "package_name" || echo "  (none)"
+	@echo ""
+	@echo "NOTE: UIDs shown in device_permissions without grant/deny value."
+	@echo "  If hasPermission() returns false, the UID entry is likely stored as DENIED."
+	@echo "  Fix: unplug glasses → replug → pick xrdroiddesk from the USB app chooser."
+	@echo "  Do NOT tap 'Request USB Permission' in the app before seeing the chooser."
+
 # ── Help ─────────────────────────────────────────────────────────────────────
 
 .PHONY: help

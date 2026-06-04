@@ -8,6 +8,23 @@ Use hand gestures detected by XReal One Pro glasses to control the **Android Des
 
 When XReal glasses are plugged into the Pixel 10 Pro via USB-C, Android prompts for either **Mirror mode** (phone screen duplicated) or **Desktop mode** (independent windowed desktop environment). **This project targets Desktop mode only.** Mirror mode is out of scope.
 
+## Feature Goals (including stretch)
+
+| Priority | Feature |
+|---|---|
+| Core | Hand gesture control of Android Desktop via UVC + MediaPipe |
+| Core | Phone primary screen off while glasses continue showing desktop + hand tracking |
+| Core | Voice keyboard input support in glasses desktop (accessibility service integration) |
+| Stretch | macOS companion app (KMP + Swift/CGEvent) |
+
+### Phone screen off — glasses desktop remains active
+
+The user wants to use the glasses as a standalone desktop display with the phone screen powered off (not just dimmed), while hand tracking and voice keyboard continue to work. This requires:
+- Keeping the external display (glasses) alive when the phone screen turns off — Android normally kills external displays on screen-off; this may need `WakeLock` on the display or a `PowerManager` flag
+- Keeping the accessibility service (and UVC camera loop) running with screen off — `AccessibilityService` survives screen-off if the service is bound; the UVC coroutine should keep reading frames
+- Voice keyboard: the Android on-screen keyboard should still function on the external display; `InputMethodService` integration may be needed if the system IME doesn't follow the external display
+- Investigation: `PowerManager.SCREEN_BRIGHT_WAKE_LOCK` on the external display, or `DisplayManager` `VirtualDisplay` approaches
+
 ## Target Hardware
 
 - **Glasses**: XReal One Pro (primary), extensible to other UVC-capable glasses
@@ -57,6 +74,136 @@ The XReal One Pro exposes its built-in RGB cameras as standard **UVC (USB Video 
 **First connection:** Android shows a one-time USB permission dialog for the app. Permission is stored per-app.
 
 **`android.hardware.usb.host` feature required** in manifest; no `CAMERA` permission needed (USB Host path bypasses Camera2).
+
+## Autonomous UVC Enablement (bypassing Control Glasses)
+
+**Goal:** Enable UVC mode on the glasses from within xrdroiddesk itself, so the user doesn't need to open Control Glasses and toggle the UVC switch manually.
+
+**Implementation:** `GlassesUvcEnabler.kt` — sends HID USB commands directly to the glasses MCU.
+
+**RE source:** `libnr_glasses_api.so` from the Control Glasses APK (`ai.nreal.controlglasses`, jadx-decompiled), plus Java sources from `XREALManager.java`.
+
+### HID interfaces on XReal One Pro
+
+Two HID interfaces (USB class=3) are present even before UVC mode is enabled:
+
+| Interface | bInterfaceNumber | Endpoints | Purpose |
+|---|---|---|---|
+| Init + Config | 0 | ep_01 OUT / ep_81 IN | Host init AND GET/SET USB config — all HID commands go here |
+| Consumer Control | 8 | ep_05 OUT / ep_88 IN | Consumer Control HID (maxPkt=3) — NOT the config channel |
+
+**HID routing confirmed:** `get_xreal_usb_handle` unconditionally stores `1` to offset `0x17` of the handle struct → XReal One Pro always uses the HID path, never the TCP pilot path. TCP pilot is a fallback only used on connection error.
+
+### HID frame format (RE'd from `cmd_build_sdk` at 0xa9ec4)
+
+```
+Offset  Size  Field
+[0]     1     Report ID = 0xfd
+[1..4]  4     CRC32 LE — init = ~innerLen & 0xff, poly 0xEDB88320, no final XOR
+               CRC range: bytes [6 .. totalLen] inclusive (includes 1 trailing zero byte
+               beyond the frame — allocate totalLen+1 scratch, return copyOf(totalLen))
+[5..6]  2     innerLen LE = totalLen - 5 = 17 + payload.size
+               (NOT totalLen; NOT cmdType — common RE mistake)
+[7..14] 8     zeros
+[15..16] 2    msgId LE  (0xD2 = GET, 0xD3 = SET — no separate cmdType field)
+[17..21] 5    zeros
+[22+]   N     payload
+```
+
+**There is no `cmdType` field.** The native code passes `w3=4` (payload size, not cmdType) to `cmd_build_sdk`. SET vs GET is distinguished entirely by msgId.
+
+### UsbConfigList — field order and delta format
+
+Fields (order from `UsbConfigList.java`): `ncm`, `ecm`, `uac`, `hid_ctrl`, `mtp`, `mass_storage`, `uvc0`, `uvc1`, `enable`
+
+**Delta format:** `0` = leave unchanged, `1` = set. Control Glasses (`XREALManager.java`) sends:
+- `uvc0 = 1`, `enable = 1`; all other fields = 0 (ncm/ecm already on, others not needed)
+- `uvc1` is **never set** by Control Glasses
+
+### SET payload — confirmed 4-byte bitmask
+
+`NRBSPSetUsbConfigAll` (0xbb498) sends **4 bytes** to the glasses: uint32 LE bitmask with UsbConfigList fields as bits: ncm(0), ecm(1), uac(2), hid_ctrl(3), mtp(4), mass_storage(5), uvc0(6), uvc1(7), enable(8). **Confirmed by Frida**: Control Glasses sends `uvc0=1, enable=1` → `0x140` → LE bytes `40 01 00 00`. `GlassesUvcEnabler` sends this exact payload.
+
+### Pilot daemon TCP path (secondary)
+
+- Accessible at `169.254.1.1:50180` via USB NCM (kernel-level Ethernet, no app USB permission needed)
+- Glasses present as `eth1` on Pixel with IP `169.254.1.10/24`; glasses IP = `169.254.1.1`
+- TCP path sends the **same HID-format frames** via `sendto()` — `PilotProtocol.kt`'s 0xAA-prefix format (`cmd_build_imu`) is for a different message class, not USB config
+- TCP path is only needed if HID bulkTransfer fails (e.g., USB permission issues)
+
+### Key function addresses in libnr_glasses_api.so
+
+| Function | Address | Notes |
+|---|---|---|
+| `send_xreal_usb_msg_timeout` | 0xa684c | Routes to HID or TCP based on handle flag |
+| `cmd_build_sdk` | 0xa9ec4 | Builds HID frames (report=0xfd) |
+| `cmd_build_imu` | 0xa9fc8 | Builds IMU/pilot frames (STX=0xAA) |
+| `get_xreal_usb_handle` | ~0xacf14 | Sets routing flag=1 (HID) at handle+0x17 |
+| `NRBSPGetUsbConfigAll` | 0xbbe54 | msgId=0xD2 GET |
+| `NRBSPSetUsbConfigAll` | 0xbb498 | msgId=0xD3, payload_size=4 |
+| `NRBSPSetUsbConfig` | 0xba978 | Per-field SET, also payload_size=4 |
+| `get_socket_connection` | 0xad85c | TCP to 169.254.1.1:50180 |
+
+### Current status
+
+#### Key hardware findings (from live testing 2026-06-04)
+
+**UVC is NOT persistent** — glasses reset to non-UVC config on every power cycle. CG re-enables it fresh on each reconnect (~2 seconds after initial attach).
+
+**Correct USB interface map (from UsbHostManager logs):**
+- Interface 0: HID init (ep_01 OUT/ep_81 IN, maxPkt=1024) — init messages (HOST_TYPE, SDK_VERSION)
+- Interface 8: HID config (ep_05 OUT/ep_88 IN, **maxPkt=3**) — intended for GET/SET but 3-byte limit prevents our frames
+- Interface 9: UVC VideoControl (class=14, subclass=1) — present only when UVC active, no endpoints
+- Interface 10: UVC VideoStreaming "Video Streaming 0" (class=14, subclass=2) — bulk IN ep 0x89 (address=137), maxPkt=512 — **this is what to claim for camera frames**
+
+**How CG enables UVC:**
+1. Glasses attach (no UVC, 8 interfaces). CG gets USB_DEVICE_ATTACHED.
+2. CG sends HOST_TYPE=2 + SDK_VERSION to interface 0 (correct channel, maxPkt=1024).
+3. CG reads current USB config via GET (0xD2), then sends SET (0xD3) with 4-byte payload.
+4. ~2 seconds after initial attach: glasses re-enumerate WITH UVC (interfaces 9+10 appear).
+
+**Correct package name:** `com.xreal.glassescontrol.store` (not `ai.nreal.controlglasses`). Use this for permission clearing via adb.
+
+**4-byte payload — CONFIRMED `0x140`:**
+Frida hook on `NRBSPSetUsbConfigAll` in Control Glasses confirms: `uvc0=1, enable=1` → `0x140` → LE bytes `40 01 00 00`. Prior "no re-enumeration" results were a timing problem (SET was arriving ~5.3 seconds after USB permission grant), not a payload problem. See "Timing fix" below.
+
+**Interface 8 confirmed as Consumer Control HID — not the config channel:**
+- EP0 control transfer (SET_REPORT): STALL (-1) immediately
+- Bulk transfer to ep_05: always times out — maxPkt=3 is interrupt HID, not bulk
+- **All GET+SET config commands go via interface 0** (same ep_01/ep_81 channel as HOST_TYPE/SDK_VERSION). `GlassesUvcEnabler` was updated — all dead iface-8 paths removed.
+
+**send_xreal_usb_msg signature (confirmed from 0xa8608):**
+`send_xreal_usb_msg(handle, msgId, JNIEnv*, payload_size, x4, x5, x6, usbConfigList_jobject)`
+The "payload" argument is JNIEnv* — packing happens INSIDE the function via JNI GetIntField on the jobject.
+
+**Next step:**
+Test full auto-enable flow: plug glasses → service auto-triggers UVC enable (no button needed) → logcat `Requirements` tag shows `uvc_active=true` → `XRealGlassesCamera.open()` succeeds → MediaPipe receives MJPEG frames.
+
+**HOST_TYPE values:**
+- HOST_TYPE=1: Display stays on, SET command does NOT trigger re-enumeration
+- HOST_TYPE=2: Display goes dark (SDK mode), correct value for CG
+
+**Fallback approach (proven working):** Let CG run to enable UVC, then take over via USB Host. Workflow: `adb shell am force-stop com.xreal.glassescontrol.store` after UVC appears → replug to clear permissions → pick xrdroiddesk from chooser.
+
+Frame format bugs in `GlassesUvcEnabler.buildHidFrame` (5 confirmed, all fixed):
+1. ✅ frame[5] = `innerLen & 0xFF` (was: `totalLen`)
+2. ✅ frame[6] = `innerLen shr 8` = 0 (was: cmdType)
+3. ✅ `cmdType` parameter removed (not in native frame)
+4. ✅ CRC init = `~innerLen & 0xff` (was: `~totalLen`)
+5. ✅ CRC range = `innerLen` bytes from offset 6, includes trailing zero (was: 1 byte short)
+
+**Timing fix (2026-06-05) — SET now reaches glasses within ~500ms of permission grant:**
+Previous attempts sent SET ~5.3 seconds after permission, likely past the glasses' config-change window. Root causes and fixes in `GlassesUvcEnabler`:
+- `HID_POST_INIT_DELAY_MS`: 2500ms → 200ms (MCU ACKs init in ~12ms; 200ms is ample)
+- Removed iface-8 HOST_TYPE attempt from `claimAndSendHidInit()` (was always timing out at 1000ms)
+- `sendUsbConfigViaHid()` simplified to iface-0 GET+SET only — the two failing paths (EP0 ctrl on iface-8, bulk to ep_05) added ~2s of dead time and are now gone
+- `HID_RESPONSE_TIMEOUT_MS`: 3000ms → 500ms
+
+**"Always" greyed out in USB chooser — permanent on Android 16 (Pixel 10 Pro):**
+Composite USB devices detected as audio headsets (`is_headset=true`) cannot be set as the "always" handler when multiple apps compete. "Just once" is the only option regardless of how many competing apps are cleared. xrdroiddesk handles this via `requestPermission()` in `GrantUsbPermissionActivity` and `MainActivity` — the permission dialog fires on each plug-in.
+
+**Requirements state logger (`MainActivity.logRequirementsState`):**
+Logs and displays state of all six prerequisites on every app event (startup, each button press, USB attach, permission result). Filter logcat by tag `Requirements` to see the full sequence. Each line: `a11y_enabled`, `a11y_running`, `usb_found`, `usb_perm`, `uvc_active`, `pending_device`. The phone screen also shows a live summary in `tvStatus`.
 
 ## Cross-Platform Hand Gesture Abstraction
 
@@ -379,6 +526,7 @@ Android Studio Device Mirroring (Hedgehog+) streams the Pixel screen directly in
 - AccessibilityService must be declared in manifest and enabled by user in Settings > Accessibility
 - **Control Glasses app must be installed** and UVC mode toggled on before camera access works
 - First launch triggers a one-time USB permission dialog for the XReal device (VID=0x3318, PID=0x0436)
+- **USB permission prerequisite**: Control Glasses (`com.xreal.glassescontrol.store`) is registered as the default/preferred USB handler for VID=13080/PID=1078. Android auto-denies `requestPermission()` calls from any other app while a preferred handler exists. **One-time fix**: Settings → Apps → "Glasses Control" → Open by default → Clear defaults → unplug and replug glasses → pick xrdroiddesk from the chooser (tap "Just once"). After this, xrdroiddesk has USB permission and Control Glasses keeps working for display. Diagnose with `make usb-permission-status`. Note: `adb shell pm clear com.xreal.glassescontrol.store` clears app data but does NOT clear the system-level USB default handler — use the Settings UI path instead. **"Always" is permanently greyed out on Android 16 (Pixel 10 Pro)**: composite USB devices detected as audio headsets cannot use "always" with multiple competing handlers — "Just once" is the maximum. xrdroiddesk calls `requestPermission()` on each plug-in to show the dialog regardless.
 - Hand tracking accuracy and latency will be a primary UX concern
 - The glasses camera points forward (eye-level view of user's hands) — ideal geometry for gesture detection
 
