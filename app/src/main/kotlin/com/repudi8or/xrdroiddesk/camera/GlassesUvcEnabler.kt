@@ -29,7 +29,7 @@ import java.nio.ByteOrder
  * NOT accept USB config frames.
  *
  * Flow: open USB → claim iface 0 → HOST_TYPE=2 + SDK_VERSION → GET (0xD2) →
- * SET (0xD3, payload=0x140 = uvc0|enable) → glasses re-enumerate with UVC active.
+ * SET (0xD3, payload=0x143 = ncm|ecm|uvc0|enable) → glasses re-enumerate with UVC active.
  */
 class GlassesUvcEnabler(
     context: Context,
@@ -109,10 +109,12 @@ class GlassesUvcEnabler(
         val epIn = hidInitEpIn
         val ifaceId = hidInitIface?.id ?: -1
 
-        // 4-byte uint32 LE bitmask confirmed by Frida: uvc0(bit6)|enable(bit8) = 0x140.
+        // 4-byte uint32 LE bitmask: ncm(bit0)|ecm(bit1)|uvc0(bit6)|enable(bit8) = 0x143.
+        // Includes ncm+ecm bits for fresh-boot where CG's GET returns ncm=0, ecm=0.
+        // Previously tried 0x140 (uvc0|enable only) — ACKed but no re-enumeration.
         val uvcPayload =
             ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).run {
-                putInt(0x140)
+                putInt(0x143)
                 array()
             }
 
@@ -122,10 +124,29 @@ class GlassesUvcEnabler(
         logHex("HID GET on iface $ifaceId", getFrame)
         val getR = conn.bulkTransfer(epOut, getFrame, getFrame.size, HID_TRANSFER_TIMEOUT_MS)
         Log.i(TAG, "HID GET: sent $getR/${getFrame.size}")
+
+        // Drain ep_81 until we see a real USB config response (innerLen > 17) or 2s timeout.
+        // MCU continuously streams heartbeats (msgId=0x0001, innerLen=17, no payload) on ep_81;
+        // the actual GET response has innerLen=53 (36-byte USB config payload).
         if (epIn != null) {
-            val gBuf = ByteArray(1024)
-            val gr = conn.bulkTransfer(epIn, gBuf, gBuf.size, HID_RESPONSE_TIMEOUT_MS)
-            if (gr > 0) logHex("HID GET response", gBuf.copyOf(gr))
+            val deadline = System.currentTimeMillis() + 2000L
+            var foundGetResponse = false
+            while (System.currentTimeMillis() < deadline) {
+                val gBuf = ByteArray(1024)
+                val gr = conn.bulkTransfer(epIn, gBuf, gBuf.size, HID_RESPONSE_TIMEOUT_MS)
+                if (gr <= 0) break
+                val innerLen = (gBuf[5].toInt() and 0xFF) or ((gBuf[6].toInt() and 0xFF) shl 8)
+                val msgId = (gBuf[15].toInt() and 0xFF) or ((gBuf[16].toInt() and 0xFF) shl 8)
+                logHex("HID GET ep_81 (innerLen=$innerLen msgId=0x${msgId.toString(16)})", gBuf.copyOf(gr))
+                if (innerLen > 17) {
+                    foundGetResponse = true
+                    Log.i(TAG, "Found real GET response (innerLen=$innerLen) — payload follows above")
+                    break
+                }
+            }
+            if (!foundGetResponse) {
+                Log.w(TAG, "GET: only heartbeats received within 2s — MCU may not have processed GET")
+            }
         }
 
         delay(HID_MSG_DELAY_MS)
@@ -133,10 +154,20 @@ class GlassesUvcEnabler(
         logHex("HID SET on iface $ifaceId", setFrame)
         val sent = conn.bulkTransfer(epOut, setFrame, setFrame.size, HID_TRANSFER_TIMEOUT_MS)
         Log.i(TAG, "HID SET: sent $sent/${setFrame.size}")
+
+        // Read up to 3 frames after SET — look for SET ACK (msgId=0xD3 or innerLen > 17)
         if (epIn != null) {
-            val inBuf = ByteArray(epIn.maxPacketSize.coerceAtLeast(64))
-            val rIn = conn.bulkTransfer(epIn, inBuf, inBuf.size, HID_RESPONSE_TIMEOUT_MS)
-            if (rIn > 0) logHex("HID SET response", inBuf.copyOf(rIn))
+            repeat(3) { i ->
+                val inBuf = ByteArray(1024)
+                val rIn = conn.bulkTransfer(epIn, inBuf, inBuf.size, HID_RESPONSE_TIMEOUT_MS)
+                if (rIn > 0) {
+                    val innerLen = (inBuf[5].toInt() and 0xFF) or ((inBuf[6].toInt() and 0xFF) shl 8)
+                    val msgId = (inBuf[15].toInt() and 0xFF) or ((inBuf[16].toInt() and 0xFF) shl 8)
+                    logHex("HID SET ep_81[$i] (innerLen=$innerLen msgId=0x${msgId.toString(16)})", inBuf.copyOf(rIn))
+                } else {
+                    return@repeat
+                }
+            }
         }
         return sent == setFrame.size
     }
@@ -568,7 +599,10 @@ class GlassesUvcEnabler(
         hidConfigIface = null
         hidConfigEpOut = null
         hidConfigEpIn = null
-        // Do NOT close the UsbDeviceConnection -- closing the last fd triggers a USB reset.
+        try {
+            conn?.close()
+        } catch (_: Exception) {
+        }
         usbConnection = null
         usbDevice = null
     }

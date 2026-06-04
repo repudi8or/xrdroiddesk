@@ -29,6 +29,7 @@ class GestureAccessibilityService : AccessibilityService() {
     private var camera: XRealGlassesCamera? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var retryJob: Job? = null
+    private var uvcEnablePending = false
 
     override fun onServiceConnected() {
         dispatcher = GestureActionDispatcher(AccessibilityDesktopController(this))
@@ -85,9 +86,21 @@ class GestureAccessibilityService : AccessibilityService() {
     fun openCamera(device: UsbDevice) {
         val cam = camera ?: return
         Log.i(TAG, "USB permission granted — opening UVC stream")
-        if (cam.open(device)) return
+        if (cam.open(device)) {
+            uvcEnablePending = false
+            return
+        }
 
-        // UVC interfaces missing — automatically enable UVC mode then wait for re-enumeration
+        // UVC interfaces missing.
+        if (uvcEnablePending) {
+            Log.i(TAG, "UVC enable already in flight — skipping duplicate openCamera()")
+            return
+        }
+        uvcEnablePending = true
+
+        // Automatically enable UVC mode then wait for re-enumeration.
+        // Guard (uvcEnablePending) ensures only one concurrent run — multiple concurrent
+        // HOST_TYPE+SET sequences interrupt each other and prevent re-enumeration.
         Log.i(TAG, "No UVC interfaces — auto-enabling UVC via HID")
         serviceScope.launch(Dispatchers.IO) {
             val enabler = GlassesUvcEnabler(this@GestureAccessibilityService)
@@ -95,12 +108,16 @@ class GestureAccessibilityService : AccessibilityService() {
             enabler.release()
             Log.i(TAG, "Auto UVC enable result: $ok")
             if (ok) {
-                // Glasses re-enumerate after UVC enable (~3-5s). Retry on Main once settled.
+                // Glasses re-enumerate ~2s after SET. Wait then retry; USB_DEVICE_ATTACHED
+                // may fire first (on re-enum) and call openCamera() which clears the flag.
                 delay(UVC_REENUM_DELAY_MS)
                 withContext(Dispatchers.Main) {
+                    uvcEnablePending = false
                     Log.i(TAG, "Re-enumeration delay done — retrying camera connect")
                     tryConnectCamera()
                 }
+            } else {
+                withContext(Dispatchers.Main) { uvcEnablePending = false }
             }
         }
     }
@@ -134,6 +151,7 @@ class GestureAccessibilityService : AccessibilityService() {
     private fun stopHandTracking() {
         retryJob?.cancel()
         retryJob = null
+        uvcEnablePending = false
         pipeline?.stop()
         landmarker?.close()
         pipeline = null
