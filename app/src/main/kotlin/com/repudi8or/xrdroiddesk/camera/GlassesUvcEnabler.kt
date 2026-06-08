@@ -22,14 +22,14 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * Enables UVC mode on XReal glasses via HID commands on interface 0.
+ * Enables UVC mode on XReal glasses via HID commands.
  *
- * All HID commands (init + USB config GET/SET) go via interface 0 (ep_01 OUT / ep_81 IN,
- * maxPkt=1024). Interface 8 (ep_05/ep_88, maxPkt=3) is Consumer Control HID — it does
- * NOT accept USB config frames.
+ * Primary path: TCP pilot daemon at 169.254.1.1:50180 (USB NCM, no USB permission needed).
+ * Call [enableUvcViaTcp] immediately on USB_DEVICE_ATTACHED — before the USB permission
+ * dialog — so HOST_TYPE=2 reaches the MCU within its ~2s init window.
  *
- * Flow: open USB → claim iface 0 → HOST_TYPE=2 + SDK_VERSION → GET (0xD2) →
- * SET (0xD3, payload=0x143 = ncm|ecm|uvc0|enable) → glasses re-enumerate with UVC active.
+ * Fallback path: USB bulk (iface 0, ep_01/ep_81, maxPkt=1024). All HID commands go here;
+ * iface 8 (ep_05/ep_88, maxPkt=3) is Consumer Control only — NOT a config channel.
  */
 class GlassesUvcEnabler(
     context: Context,
@@ -59,6 +59,12 @@ class GlassesUvcEnabler(
         private const val READ_TIMEOUT_MS = 5000
         private const val MAX_RESPONSE_BYTES = 512
 
+        // Fast TCP path — short timeouts for the enableUvcViaTcp() path
+        private const val TCP_CONNECT_TIMEOUT_MS = 2000
+        private const val TCP_RETRIES = 5
+        private const val TCP_RETRY_DELAY_MS = 1000L
+        private const val TCP_READ_TIMEOUT_MS = 1000
+
         // G-series HID protocol (RE'd from libnr_glasses_api.so cmd_build_sdk / hid_write)
         private const val HID_REPORT_ID: Byte = 0xfd.toByte()
         private const val MSG_W_HOST_TYPE = 0x0060
@@ -82,21 +88,102 @@ class GlassesUvcEnabler(
         private const val HID_CONFIG_IFACE_NUMBER = 8
     }
 
-    /**
-     * Full UVC enable flow via HID (RE'd from NRBSPSetUsbConfigAll):
-     * 1. Open USB device
-     * 2. Claim both HID interfaces + send init (HOST_TYPE=1 to avoid SDK-mode display blank)
-     * 3. Send GET (0x00D2) + SET (0x00D3) UVC config
-     *
-     * Init IS required — glasses need it before processing USB config SET commands
-     * (NRBSPSetUsbConfigAll calls wait_for_service_ready before send_xreal_usb_msg).
-     */
+    /** USB-bulk UVC enable (fallback). Try [enableUvcViaTcp] first if possible. */
     suspend fun enableUvc(): Boolean =
         withContext(Dispatchers.IO) {
             openUsbDevice()
             claimAndSendHidInit()
             sendUsbConfigViaHid()
         }
+
+    /**
+     * Enable UVC via TCP pilot daemon (169.254.1.1:50180, USB NCM, no USB permission needed).
+     *
+     * Sends the same G-series HID frames as the USB bulk path, but over TCP. Call this
+     * immediately on USB_DEVICE_ATTACHED so HOST_TYPE=2 reaches the MCU within its ~2s
+     * init window — before the Android USB permission dialog has even been shown.
+     *
+     * The MCU re-enumerates ~2s after SET; the caller should then wait for a fresh
+     * USB_DEVICE_ATTACHED with UVC interfaces present.
+     */
+    suspend fun enableUvcViaTcp(): Boolean =
+        withContext(Dispatchers.IO) {
+            val socket =
+                connectToPilot(TCP_RETRIES, TCP_CONNECT_TIMEOUT_MS, TCP_RETRY_DELAY_MS)
+                    ?: return@withContext false.also { Log.w(TAG, "TCP: pilot unreachable") }
+            try {
+                val out = socket.getOutputStream()
+
+                val hostTypeFrame =
+                    buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
+                logHex("TCP HOST_TYPE", hostTypeFrame)
+                out.write(hostTypeFrame)
+                delay(HID_MSG_DELAY_MS)
+
+                val versionFrame =
+                    buildHidFrame(MSG_W_SDK_VERSION, HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0))
+                logHex("TCP SDK_VERSION", versionFrame)
+                out.write(versionFrame)
+                delay(HID_POST_INIT_DELAY_MS)
+
+                drainTcpIn(socket, "TCP post-init")
+
+                val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
+                logHex("TCP GET", getFrame)
+                out.write(getFrame)
+                delay(HID_MSG_DELAY_MS)
+
+                val setPayload =
+                    ByteBuffer
+                        .allocate(4)
+                        .order(ByteOrder.LITTLE_ENDIAN)
+                        .apply { putInt(0x143) }
+                        .array()
+                val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, setPayload)
+                logHex("TCP SET", setFrame)
+                out.write(setFrame)
+                out.flush()
+
+                drainTcpIn(socket, "TCP post-SET")
+                Log.i(TAG, "TCP UVC enable complete — waiting for re-enumeration")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "TCP UVC enable error: ${e.message}")
+                false
+            } finally {
+                try {
+                    socket.close()
+                } catch (_: IOException) {
+                }
+            }
+        }
+
+    /** Read and log up to 3 frames from the TCP socket for diagnostics. */
+    private fun drainTcpIn(
+        socket: Socket,
+        label: String,
+    ) {
+        val prev = socket.soTimeout
+        socket.soTimeout = TCP_READ_TIMEOUT_MS
+        try {
+            val input = socket.getInputStream()
+            repeat(3) {
+                val buf = ByteArray(1024)
+                val r =
+                    try {
+                        input.read(buf)
+                    } catch (_: Exception) {
+                        return
+                    }
+                if (r <= 0) return
+                val innerLen = if (r >= 7) (buf[5].toInt() and 0xFF) or ((buf[6].toInt() and 0xFF) shl 8) else -1
+                val msgId = if (r >= 17) (buf[15].toInt() and 0xFF) or ((buf[16].toInt() and 0xFF) shl 8) else -1
+                logHex("$label (innerLen=$innerLen msgId=0x${msgId.toString(16)})", buf.copyOf(r))
+            }
+        } finally {
+            socket.soTimeout = prev
+        }
+    }
 
     /** Send MSG_USB_CONFIG_GET then MSG_USB_CONFIG_SET via iface 0 (ep_01) to enable UVC. */
     private suspend fun sendUsbConfigViaHid(): Boolean {
@@ -520,8 +607,16 @@ class GlassesUvcEnabler(
         }
     }
 
-    private suspend fun waitForPilot(): Socket? {
-        repeat(PILOT_WAIT_RETRIES) { attempt ->
+    private suspend fun waitForPilot(): Socket? =
+        connectToPilot(PILOT_WAIT_RETRIES, CONNECT_TIMEOUT_MS, PILOT_WAIT_DELAY_MS)
+            .also { if (it == null) Log.e(TAG, "Pilot daemon never became reachable") }
+
+    private suspend fun connectToPilot(
+        retries: Int,
+        connectTimeoutMs: Int,
+        retryDelayMs: Long,
+    ): Socket? {
+        repeat(retries) { attempt ->
             for (ip in PILOT_IPS) {
                 try {
                     val socket = Socket()
@@ -529,16 +624,15 @@ class GlassesUvcEnabler(
                     // (wlan0), which has no route to 169.254.x.x. Bind to the eth0/eth1
                     // Network so the kernel marks the socket for the correct routing table.
                     findNetworkForIp(ip)?.bindSocket(socket)
-                    socket.connect(InetSocketAddress(ip, PILOT_PORT), CONNECT_TIMEOUT_MS)
-                    Log.i(TAG, "Pilot daemon connected at $ip:$PILOT_PORT (attempt ${attempt + 1})")
+                    socket.connect(InetSocketAddress(ip, PILOT_PORT), connectTimeoutMs)
+                    Log.i(TAG, "Pilot connected at $ip:$PILOT_PORT (attempt ${attempt + 1})")
                     return socket
                 } catch (_: IOException) {
                 }
             }
-            Log.d(TAG, "Pilot not reachable (attempt ${attempt + 1}/$PILOT_WAIT_RETRIES)")
-            delay(PILOT_WAIT_DELAY_MS)
+            Log.d(TAG, "Pilot not reachable (attempt ${attempt + 1}/$retries)")
+            delay(retryDelayMs)
         }
-        Log.e(TAG, "Pilot daemon never became reachable after ${PILOT_WAIT_RETRIES * (CONNECT_TIMEOUT_MS * 2 + PILOT_WAIT_DELAY_MS)}ms")
         return null
     }
 

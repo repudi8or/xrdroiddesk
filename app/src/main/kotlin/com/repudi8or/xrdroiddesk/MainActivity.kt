@@ -86,6 +86,17 @@ class MainActivity : AppCompatActivity() {
     // If the service isn't running yet, cache the device so startHandTracking() can use it.
     private fun handleUsbAttached(intent: Intent?) {
         if (intent?.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
+
+        // Fire TCP UVC enable immediately — no USB permission needed.
+        // The MCU only accepts HOST_TYPE=2 within ~2s of USB attach; this races ahead of
+        // the permission dialog so we land inside that window.
+        activityScope.launch(Dispatchers.IO) {
+            val enabler = GlassesUvcEnabler(this@MainActivity)
+            val ok = enabler.enableUvcViaTcp()
+            enabler.release()
+            Log.i(TAG, "TCP UVC enable result: $ok")
+        }
+
         val device: UsbDevice? =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
