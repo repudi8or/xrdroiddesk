@@ -177,13 +177,45 @@ Frida hook on `NRBSPSetUsbConfigAll` in Control Glasses confirms: `uvc0=1, enabl
 The "payload" argument is JNIEnv* — packing happens INSIDE the function via JNI GetIntField on the jobject.
 
 **Next step:**
-Test full auto-enable flow: plug glasses → service auto-triggers UVC enable (no button needed) → logcat `Requirements` tag shows `uvc_active=true` → `XRealGlassesCamera.open()` succeeds → MediaPipe receives MJPEG frames.
+Fast-path test: plug glasses after xrdroiddesk already has VID/PID permission (no reinstall between plugs). Should see "already have permission — launching HID enableUvc() immediately" → HOST_TYPE at ~50ms → MCU enters config mode → GET returns real config → SET → UVC re-enum → camera opens.
 
 **HOST_TYPE values:**
 - HOST_TYPE=1: Display stays on, SET command does NOT trigger re-enumeration
 - HOST_TYPE=2: Display goes dark (SDK mode), correct value for CG
 
 **Fallback approach (proven working):** Let CG run to enable UVC, then take over via USB Host. Workflow: `adb shell am force-stop com.xreal.glassescontrol.store` after UVC appears → replug to clear permissions → pick xrdroiddesk from chooser.
+
+#### Key findings from live testing 2026-06-18
+
+**CG auto-dismiss working:** `dismissCgUsbDialog()` confirmed firing at +310–418ms after attach, preventing CG from being set as preferred handler. The `usbSessionActive` flag (set on non-UVC attach, cleared on camera open or detach) keeps dismissal armed through the full USB lifecycle — not just during the narrow permission-dialog window.
+
+**TCP path definitively cannot trigger re-enum on fresh connect:** Confirmed across all test runs. TCP 0x26 pings always return heartbeats (msgId=0x1). TCP SET returns heartbeat. No re-enum ever observed from TCP alone without prior CG HID init.
+
+**MCU config window is shorter than 242ms:** Our HID HOST_TYPE=2 arrives at +242ms after attach (via dialog path) and the MCU still returns only heartbeats to 0x26 pings. CG likely receives auto-grant (sole app with manifest USB_DEVICE_ATTACHED filter for VID/PID) and sends HID HOST_TYPE within ~100ms — inside the MCU's config window.
+
+**USB permission cleared on reinstall:** Android USB permissions are stored per-app-per-VID/PID. Installing a new APK (`adb install -r`) clears the stored permission, forcing a fresh dialog on next plug-in. For production users this only happens once (first install). During development, reinstalling always requires one dialog plug before the fast path activates.
+
+**Fast path implemented (2026-06-18):** When `usbManager.hasPermission(device)` = true on non-UVC attach, the service skips the permission dialog and TCP early path entirely, launching `enableUvc()` (HID bulk) immediately. HOST_TYPE=2 should arrive within ~50ms of attach — well inside the MCU's config window. Triggered on second plug-in (first plug establishes the permission; subsequent plugs use fast path).
+
+**Interface 8 HID descriptor captured:**
+`05 0c 09 01 a1 01 85 01 15 00 25 01 75 01 95 01 09 e9 81 02 ... c0`
+Usage page 0x0C = Consumer Device. Confirms this is Consumer Control (volume, play/pause, etc.), NOT a USB config channel. All config commands (HOST_TYPE, SDK_VERSION, 0x26, GET, SET) go via interface 0 (ep_01 OUT / ep_81 IN, maxPkt=1024).
+
+**Retry loop fix (2026-06-18):** `openCamera()` on a non-UVC device now always returns immediately (no 3s retry scheduled). The `hidEnablePending` flag prevents duplicate HID enable launches. `tryConnectCamera()` also short-circuits when `hidEnablePending=true`. This eliminates the infinite retry loop that was firing every 3 seconds and interfering with the HID enable coroutine.
+
+**Current autonomous flow (fast path — permission already granted):**
+1. Non-UVC device attaches → `hasPermission()=true` → launch HID `enableUvc()` immediately (~0ms)
+2. HOST_TYPE=2 + SDK_VERSION + 0x26 pings via USB bulk on iface 0 (~50ms)
+3. If MCU enters config mode → GET (real config, innerLen>17) + SET (0x140) → glasses re-enumerate with UVC in ~2s
+4. UVC device attaches → `hasPermission(UVC device)=true` (same VID/PID) → `openCamera()` directly
+5. Camera opens → MediaPipe MJPEG frames → hand tracking active
+
+**Current autonomous flow (slow path — first plug after install/reinstall):**
+1. Non-UVC device attaches → `hasPermission()=false` → permission dialog + TCP early path
+2. Auto-tap dialog at ~+179ms → permission confirmed at ~+229ms → `openCamera()` fails (no UVC)
+3. `openCamera()` launches HID `enableUvc()` → HOST_TYPE arrives at ~+242ms
+4. MCU config window likely already closed → only heartbeats → `enableUvc()` returns false
+5. Permission is now stored for VID/PID → next plug takes fast path
 
 Frame format bugs in `GlassesUvcEnabler.buildHidFrame` (5 confirmed, all fixed):
 1. ✅ frame[5] = `innerLen & 0xFF` (was: `totalLen`)

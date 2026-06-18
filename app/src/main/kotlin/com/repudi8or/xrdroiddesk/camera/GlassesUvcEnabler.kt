@@ -59,11 +59,16 @@ class GlassesUvcEnabler(
         private const val READ_TIMEOUT_MS = 5000
         private const val MAX_RESPONSE_BYTES = 512
 
-        // Fast TCP path — short timeouts for the enableUvcViaTcp() path
-        private const val TCP_CONNECT_TIMEOUT_MS = 2000
-        private const val TCP_RETRIES = 5
-        private const val TCP_RETRY_DELAY_MS = 1000L
+        // Early TCP path (enableUvcViaTcp) — aggressive retry to hit the MCU init window.
+        // Pilot is reachable as soon as NCM comes up (~0.5-1s after USB attach). Retry every
+        // 200ms so we connect as early as possible and send HOST_TYPE before the window closes.
+        private const val TCP_CONNECT_TIMEOUT_MS = 1000
+        private const val TCP_RETRIES = 15
+        private const val TCP_RETRY_DELAY_MS = 200L
         private const val TCP_READ_TIMEOUT_MS = 1000
+
+        // After HOST_TYPE=2, wait this long for the MCU to enter SDK mode before sending 0x26.
+        private const val TCP_SDK_MODE_WAIT_MS = 300L
 
         // G-series HID protocol (RE'd from libnr_glasses_api.so cmd_build_sdk / hid_write)
         private const val HID_REPORT_ID: Byte = 0xfd.toByte()
@@ -76,6 +81,14 @@ class GlassesUvcEnabler(
         // RE'd from NRBSPSetUsbConfigAll (0xbb498): MOVZ w1, #0xd3
         // SET vs GET is distinguished purely by msgID (0xD3 vs 0xD2) -- no cmdType field in frame.
         private const val MSG_USB_CONFIG_SET = 0x00D3
+
+        // RE'd from wait_for_service_ready_with_handle (0xae488): MOVZ w1, #0x26
+        // NRBSPGetUsbConfigAll AND NRBSPSetUsbConfigAll both call wait_for_service_ready (up to 6x)
+        // before sending GET/SET. This ping puts the MCU into SDK config mode. Without it, GET
+        // returns only heartbeats and SET has no effect.
+        private const val MSG_SERVICE_READY = 0x0026
+        private const val SERVICE_READY_RETRIES = 6
+        private const val SERVICE_READY_DELAY_MS = 200L
         private const val HID_HOST_TYPE_ANDROID = 2 // SDK mode required for glasses to process USB config SET
         private const val HID_SDK_VERSION = "3.3.0"
         private const val HID_TRANSFER_TIMEOUT_MS = 1000
@@ -86,15 +99,139 @@ class GlassesUvcEnabler(
 
         // bInterfaceNumber of the config HID interface (ep_05/ep_88) seen in sysfs 1-1:1.8
         private const val HID_CONFIG_IFACE_NUMBER = 8
+
+        // TCP retry params for enableUvc() after HID init wakes the pilot.
+        // Pilot starts within ~1-2s of HOST_TYPE; 20 retries × 1.5s = 30s window.
+        private const val TCP_HID_RETRIES = 20
+        private const val TCP_HID_CONNECT_MS = 1000
+        private const val TCP_HID_RETRY_DELAY_MS = 500L
     }
 
-    /** USB-bulk UVC enable (fallback). Try [enableUvcViaTcp] first if possible. */
+    /**
+     * USB-bulk HID init → 0x26 service-ready ping → HID GET+SET to enable UVC.
+     *
+     * RE finding (2026-06-17): both NRBSPGetUsbConfigAll (0xbc9a0) and NRBSPSetUsbConfigAll
+     * (0xbb498) call wait_for_service_ready (sends msgId=0x26) up to 6× before their respective
+     * commands. Without this ping, MCU returns only heartbeats to GET and ignores SET. We now
+     * replicate this sequence. Falls back to TCP pilot path if HID GET returns only heartbeats
+     * (MCU timing window may still apply).
+     */
     suspend fun enableUvc(): Boolean =
         withContext(Dispatchers.IO) {
+            Log.i(TAG, "═══ enableUvc START ═══")
+            Log.i(TAG, "  Step 1: open USB device")
             openUsbDevice()
+            Log.i(TAG, "  Step 2: HID init (HOST_TYPE=2 + SDK_VERSION + 0x26 service-ready ping)")
             claimAndSendHidInit()
-            sendUsbConfigViaHid()
+            Log.i(TAG, "  Step 3: HID GET+SET (native SDK path)")
+            val hidOk = sendUsbConfigViaHid()
+            if (hidOk) {
+                Log.i(TAG, "  Step 3 ✓ HID path complete — expect re-enumeration in ~2s")
+                Log.i(TAG, "═══ enableUvc END (HID path) ═══")
+                true
+            } else {
+                Log.w(TAG, "  Step 3 ✗ HID GET only heartbeats — MCU not in config mode")
+                Log.i(TAG, "  Step 4: TCP pilot (diagnostic only — TCP cannot trigger re-enum)")
+                val tcpOk = sendUsbConfigViaTcp()
+                Log.i(TAG, "  Step 4 ${if (tcpOk) "TCP SET sent (no re-enum expected)" else "✗ TCP also failed"}")
+                Log.i(TAG, "═══ enableUvc END (result=false — HID failed; Control Glasses required) ═══")
+                false
+            }
         }
+
+    /**
+     * After HID init has woken the pilot, connect via TCP and send GET + SET(0x140).
+     * Sends 0x26 service-ready pings first — same requirement as the HID path.
+     */
+    private suspend fun sendUsbConfigViaTcp(): Boolean {
+        val socket =
+            connectToPilot(TCP_HID_RETRIES, TCP_HID_CONNECT_MS, TCP_HID_RETRY_DELAY_MS)
+                ?: run {
+                    Log.w(TAG, "  4: TCP pilot unreachable after HID init (${TCP_HID_RETRIES} retries)")
+                    return false
+                }
+        return try {
+            val out = socket.getOutputStream()
+
+            // 0x26 service-ready ping via TCP — same requirement as HID GET/SET.
+            // Without this the MCU returns heartbeats to GET/SET and ignores the config change.
+            Log.i(TAG, "  4a: sending 0x26 service-ready ping(s) via TCP (up to $SERVICE_READY_RETRIES)")
+            val pingFrame = buildHidFrame(MSG_SERVICE_READY, ByteArray(0))
+            var tcpServiceReady = false
+            repeat(SERVICE_READY_RETRIES) { attempt ->
+                logHex("  4a: TCP 0x26 ping attempt ${attempt + 1}", pingFrame)
+                out.write(pingFrame)
+                out.flush()
+                val resp = readTcpFrameWithTimeout(socket, SERVICE_READY_DELAY_MS.toInt())
+                if (resp != null) {
+                    val msgId = (resp[15].toInt() and 0xFF) or ((resp[16].toInt() and 0xFF) shl 8)
+                    val innerLen = (resp[5].toInt() and 0xFF) or ((resp[6].toInt() and 0xFF) shl 8)
+                    logHex("  4a: TCP 0x26 response attempt ${attempt + 1} (msgId=0x${msgId.toString(16)} innerLen=$innerLen)", resp)
+                    if (msgId != 0x0001) {
+                        Log.i(TAG, "  4a: MCU in config mode via TCP (attempt ${attempt + 1}) ✓")
+                        tcpServiceReady = true
+                        return@repeat
+                    }
+                    Log.d(TAG, "  4a: TCP 0x26 heartbeat attempt ${attempt + 1} — not ready yet")
+                } else {
+                    Log.d(TAG, "  4a: TCP 0x26 no response attempt ${attempt + 1}")
+                }
+            }
+            if (!tcpServiceReady) {
+                Log.w(TAG, "  4a: MCU still not in config mode after $SERVICE_READY_RETRIES TCP 0x26 pings — sending SET anyway")
+            }
+
+            Log.i(TAG, "  4b: TCP GET (msgId=0xD2)")
+            val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
+            logHex("  4b: TCP GET frame", getFrame)
+            out.write(getFrame)
+            out.flush()
+            delay(HID_MSG_DELAY_MS)
+            drainTcpIn(socket, "  4b: TCP post-GET")
+
+            Log.i(TAG, "  4c: TCP SET (msgId=0xD3, payload=0x140 uvc0+enable)")
+            val setPayload =
+                ByteBuffer
+                    .allocate(4)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .apply { putInt(0x140) }
+                    .array()
+            val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, setPayload)
+            logHex("  4c: TCP SET frame", setFrame)
+            out.write(setFrame)
+            out.flush()
+            drainTcpIn(socket, "  4c: TCP post-SET")
+
+            Log.i(TAG, "  4c: TCP SET complete — expecting re-enumeration in ~2s")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "enableUvc TCP error: ${e.message}")
+            false
+        } finally {
+            try {
+                socket.close()
+            } catch (_: IOException) {
+            }
+        }
+    }
+
+    /** Read one frame from TCP with a short timeout; returns null on timeout or error. */
+    private fun readTcpFrameWithTimeout(
+        socket: Socket,
+        timeoutMs: Int,
+    ): ByteArray? {
+        val prev = socket.soTimeout
+        socket.soTimeout = timeoutMs
+        return try {
+            val buf = ByteArray(1024)
+            val r = socket.getInputStream().read(buf)
+            if (r > 0) buf.copyOf(r) else null
+        } catch (_: Exception) {
+            null
+        } finally {
+            socket.soTimeout = prev
+        }
+    }
 
     /**
      * Enable UVC via TCP pilot daemon (169.254.1.1:50180, USB NCM, no USB permission needed).
@@ -108,47 +245,106 @@ class GlassesUvcEnabler(
      */
     suspend fun enableUvcViaTcp(): Boolean =
         withContext(Dispatchers.IO) {
+            val t0 = System.currentTimeMillis()
+            Log.i(TAG, "═══ enableUvcViaTcp START (early path, no USB permission needed) ═══")
+
             val socket =
                 connectToPilot(TCP_RETRIES, TCP_CONNECT_TIMEOUT_MS, TCP_RETRY_DELAY_MS)
-                    ?: return@withContext false.also { Log.w(TAG, "TCP: pilot unreachable") }
+                    ?: return@withContext false.also {
+                        Log.w(TAG, "TCP early: pilot unreachable after $TCP_RETRIES retries (+${System.currentTimeMillis() - t0}ms)")
+                    }
+            Log.i(TAG, "TCP early: connected at +${System.currentTimeMillis() - t0}ms")
+
             try {
                 val out = socket.getOutputStream()
 
+                // HOST_TYPE=2 + SDK_VERSION — send immediately, must arrive within MCU boot window
                 val hostTypeFrame =
                     buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
-                logHex("TCP HOST_TYPE", hostTypeFrame)
+                logHex("TCP early HOST_TYPE=2 (+${System.currentTimeMillis() - t0}ms)", hostTypeFrame)
                 out.write(hostTypeFrame)
-                delay(HID_MSG_DELAY_MS)
+                out.flush()
 
                 val versionFrame =
                     buildHidFrame(MSG_W_SDK_VERSION, HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0))
-                logHex("TCP SDK_VERSION", versionFrame)
+                logHex("TCP early SDK_VERSION (+${System.currentTimeMillis() - t0}ms)", versionFrame)
                 out.write(versionFrame)
-                delay(HID_POST_INIT_DELAY_MS)
+                out.flush()
 
-                drainTcpIn(socket, "TCP post-init")
+                // 0x26 service-ready pings — MCU must respond with non-heartbeat before GET/SET
+                // No wait between HOST_TYPE and pings: CG sends these back-to-back, and
+                // the ~300ms delay we had was pushing us past the MCU's config window.
+                Log.i(TAG, "TCP early: 0x26 service-ready (+${System.currentTimeMillis() - t0}ms)")
+                val pingFrame = buildHidFrame(MSG_SERVICE_READY, ByteArray(0))
+                var serviceReady = false
+                repeat(SERVICE_READY_RETRIES) { attempt ->
+                    out.write(pingFrame)
+                    out.flush()
+                    val resp = readTcpFrameWithTimeout(socket, SERVICE_READY_DELAY_MS.toInt())
+                    if (resp != null) {
+                        val msgId = (resp[15].toInt() and 0xFF) or ((resp[16].toInt() and 0xFF) shl 8)
+                        val innerLen = (resp[5].toInt() and 0xFF) or ((resp[6].toInt() and 0xFF) shl 8)
+                        if (msgId != 0x0001) {
+                            Log.i(
+                                TAG,
+                                "TCP early: MCU in config mode (attempt ${attempt + 1}) msgId=0x${msgId.toString(
+                                    16,
+                                )} innerLen=$innerLen ✓ (+${System.currentTimeMillis() - t0}ms)",
+                            )
+                            serviceReady = true
+                            return@repeat
+                        }
+                        Log.d(TAG, "TCP early: 0x26 heartbeat attempt ${attempt + 1}")
+                    } else {
+                        Log.d(TAG, "TCP early: 0x26 no response attempt ${attempt + 1}")
+                    }
+                }
+                if (!serviceReady) {
+                    Log.w(
+                        TAG,
+                        "TCP early: MCU not in config mode after $SERVICE_READY_RETRIES pings (+${System.currentTimeMillis() - t0}ms) — sending GET+SET anyway",
+                    )
+                }
 
+                // GET current config
                 val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
-                logHex("TCP GET", getFrame)
+                logHex("TCP early GET (+${System.currentTimeMillis() - t0}ms)", getFrame)
                 out.write(getFrame)
-                delay(HID_MSG_DELAY_MS)
+                out.flush()
+                val getResp = readTcpFrameWithTimeout(socket, 500)
+                if (getResp != null) {
+                    val innerLen = (getResp[5].toInt() and 0xFF) or ((getResp[6].toInt() and 0xFF) shl 8)
+                    val msgId = (getResp[15].toInt() and 0xFF) or ((getResp[16].toInt() and 0xFF) shl 8)
+                    Log.i(
+                        TAG,
+                        "TCP early: GET response innerLen=$innerLen msgId=0x${msgId.toString(
+                            16,
+                        )} ${if (innerLen > 17) "✓ real config" else "(heartbeat)"}",
+                    )
+                }
 
+                // SET uvc0+enable
                 val setPayload =
                     ByteBuffer
                         .allocate(4)
                         .order(ByteOrder.LITTLE_ENDIAN)
-                        .apply { putInt(0x143) }
+                        .apply { putInt(0x140) }
                         .array()
                 val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, setPayload)
-                logHex("TCP SET", setFrame)
+                logHex("TCP early SET (+${System.currentTimeMillis() - t0}ms)", setFrame)
                 out.write(setFrame)
                 out.flush()
+                val setResp = readTcpFrameWithTimeout(socket, 500)
+                if (setResp != null) {
+                    val innerLen = (setResp[5].toInt() and 0xFF) or ((setResp[6].toInt() and 0xFF) shl 8)
+                    val msgId = (setResp[15].toInt() and 0xFF) or ((setResp[16].toInt() and 0xFF) shl 8)
+                    Log.i(TAG, "TCP early: SET response innerLen=$innerLen msgId=0x${msgId.toString(16)}")
+                }
 
-                drainTcpIn(socket, "TCP post-SET")
-                Log.i(TAG, "TCP UVC enable complete — waiting for re-enumeration")
+                Log.i(TAG, "═══ enableUvcViaTcp END (+${System.currentTimeMillis() - t0}ms) ═══")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "TCP UVC enable error: ${e.message}")
+                Log.e(TAG, "TCP early error: ${e.message}")
                 false
             } finally {
                 try {
@@ -185,7 +381,13 @@ class GlassesUvcEnabler(
         }
     }
 
-    /** Send MSG_USB_CONFIG_GET then MSG_USB_CONFIG_SET via iface 0 (ep_01) to enable UVC. */
+    /**
+     * Send MSG_USB_CONFIG_GET then MSG_USB_CONFIG_SET via iface 0 (ep_01) to enable UVC.
+     *
+     * Returns true if SET was sent AND GET returned real config (innerLen > 17), indicating
+     * the MCU is in SDK config mode. Returns false if GET only returned heartbeats — caller
+     * should fall back to TCP path.
+     */
     private suspend fun sendUsbConfigViaHid(): Boolean {
         val conn =
             usbConnection ?: run {
@@ -196,51 +398,58 @@ class GlassesUvcEnabler(
         val epIn = hidInitEpIn
         val ifaceId = hidInitIface?.id ?: -1
 
-        // 4-byte uint32 LE bitmask: ncm(bit0)|ecm(bit1)|uvc0(bit6)|enable(bit8) = 0x143.
-        // Includes ncm+ecm bits for fresh-boot where CG's GET returns ncm=0, ecm=0.
-        // Previously tried 0x140 (uvc0|enable only) — ACKed but no re-enumeration.
+        // 4-byte uint32 LE bitmask: uvc0(bit6)|enable(bit8) = 0x140.
+        // Frida-confirmed: CG sends exactly this (uvc0=1, enable=1 only).
         val uvcPayload =
             ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).run {
-                putInt(0x143)
+                putInt(0x140)
                 array()
             }
 
         val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
         val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, uvcPayload)
 
+        Log.i(TAG, "  3a: sending HID GET (msgId=0xD2) on iface $ifaceId")
         logHex("HID GET on iface $ifaceId", getFrame)
         val getR = conn.bulkTransfer(epOut, getFrame, getFrame.size, HID_TRANSFER_TIMEOUT_MS)
-        Log.i(TAG, "HID GET: sent $getR/${getFrame.size}")
+        Log.i(TAG, "  3a: HID GET sent $getR/${getFrame.size} ${if (getR == getFrame.size) "✓" else "✗"}")
 
         // Drain ep_81 until we see a real USB config response (innerLen > 17) or 2s timeout.
-        // MCU continuously streams heartbeats (msgId=0x0001, innerLen=17, no payload) on ep_81;
-        // the actual GET response has innerLen=53 (36-byte USB config payload).
+        // MCU streams heartbeats (msgId=0x0001, innerLen=17) on ep_81 when not in config mode.
+        // After 0x26 service-ready, the actual GET response should have innerLen=53 (36-byte payload).
+        var foundGetResponse = false
+        var heartbeatCount = 0
         if (epIn != null) {
             val deadline = System.currentTimeMillis() + 2000L
-            var foundGetResponse = false
             while (System.currentTimeMillis() < deadline) {
                 val gBuf = ByteArray(1024)
                 val gr = conn.bulkTransfer(epIn, gBuf, gBuf.size, HID_RESPONSE_TIMEOUT_MS)
-                if (gr <= 0) break
+                if (gr <= 0) continue
                 val innerLen = (gBuf[5].toInt() and 0xFF) or ((gBuf[6].toInt() and 0xFF) shl 8)
                 val msgId = (gBuf[15].toInt() and 0xFF) or ((gBuf[16].toInt() and 0xFF) shl 8)
-                logHex("HID GET ep_81 (innerLen=$innerLen msgId=0x${msgId.toString(16)})", gBuf.copyOf(gr))
                 if (innerLen > 17) {
+                    logHex("  3a: HID GET real response (innerLen=$innerLen msgId=0x${msgId.toString(16)})", gBuf.copyOf(gr))
                     foundGetResponse = true
-                    Log.i(TAG, "Found real GET response (innerLen=$innerLen) — payload follows above")
+                    Log.i(TAG, "  3a: MCU in config mode — GET returned real config (innerLen=$innerLen) ✓")
                     break
+                } else {
+                    heartbeatCount++
+                    Log.d(TAG, "  3a: heartbeat #$heartbeatCount (msgId=0x${msgId.toString(16)} innerLen=$innerLen)")
                 }
             }
-            if (!foundGetResponse) {
-                Log.w(TAG, "GET: only heartbeats received within 2s — MCU may not have processed GET")
-            }
+        }
+
+        if (!foundGetResponse) {
+            Log.w(TAG, "  3a: only heartbeats ($heartbeatCount) after 0x26 ping — MCU not in config mode ✗ — falling back to TCP")
+            return false
         }
 
         delay(HID_MSG_DELAY_MS)
 
+        Log.i(TAG, "  3b: sending HID SET (msgId=0xD3, payload=0x140 uvc0+enable) on iface $ifaceId")
         logHex("HID SET on iface $ifaceId", setFrame)
         val sent = conn.bulkTransfer(epOut, setFrame, setFrame.size, HID_TRANSFER_TIMEOUT_MS)
-        Log.i(TAG, "HID SET: sent $sent/${setFrame.size}")
+        Log.i(TAG, "  3b: HID SET sent $sent/${setFrame.size} ${if (sent == setFrame.size) "✓ — expect re-enumeration in ~2s" else "✗"}")
 
         // Read up to 3 frames after SET — look for SET ACK (msgId=0xD3 or innerLen > 17)
         if (epIn != null) {
@@ -250,7 +459,7 @@ class GlassesUvcEnabler(
                 if (rIn > 0) {
                     val innerLen = (inBuf[5].toInt() and 0xFF) or ((inBuf[6].toInt() and 0xFF) shl 8)
                     val msgId = (inBuf[15].toInt() and 0xFF) or ((inBuf[16].toInt() and 0xFF) shl 8)
-                    logHex("HID SET ep_81[$i] (innerLen=$innerLen msgId=0x${msgId.toString(16)})", inBuf.copyOf(rIn))
+                    logHex("  3b: HID SET ACK[$i] (innerLen=$innerLen msgId=0x${msgId.toString(16)})", inBuf.copyOf(rIn))
                 } else {
                     return@repeat
                 }
@@ -407,10 +616,10 @@ class GlassesUvcEnabler(
                 .map { device.getInterface(it) }
                 .filter { it.interfaceClass == UsbConstants.USB_CLASS_HID }
 
-        Log.i(TAG, "Found ${hidInterfaces.size} HID interface(s): ${hidInterfaces.map { "id=${it.id} eps=${it.endpointCount}" }}")
+        Log.i(TAG, "  2: found ${hidInterfaces.size} HID interface(s): ${hidInterfaces.map { "id=${it.id} eps=${it.endpointCount}" }}")
 
         if (hidInterfaces.isEmpty()) {
-            Log.w(TAG, "No HID interfaces found -- skipping init")
+            Log.w(TAG, "  2: no HID interfaces found — skipping init ✗")
             return
         }
 
@@ -460,69 +669,95 @@ class GlassesUvcEnabler(
                 Log.w(TAG, "claimInterface(config iface ${configIface.id}) failed -- will attempt GET/SET anyway")
             }
         }
-
-        Log.i(
-            TAG,
-            "Config HID iface id=${configIface.id} ep_out=0x${configEpOut?.address?.toString(16) ?: "none"}" +
-                " ep_in=0x${configEpIn?.address?.toString(16) ?: "none"}" +
-                " maxPktOut=${configEpOut?.maxPacketSize} maxPktIn=${configEpIn?.maxPacketSize}",
-        )
         hidConfigIface = configIface
         hidConfigEpOut = configEpOut
         hidConfigEpIn = configEpIn
 
-        // Read interface 8 HID descriptor to understand valid report IDs and sizes
-        val descBuf = ByteArray(256)
-        val dr = conn.controlTransfer(0x81, 0x06, 0x2200, configIface.id, descBuf, descBuf.size, 2000)
-        if (dr > 0) {
-            logHex("HID descriptor iface ${configIface.id} ($dr bytes)", descBuf.copyOf(dr))
-        } else {
-            Log.w(TAG, "HID descriptor iface ${configIface.id}: r=$dr")
-        }
-
-        // Send init messages on the init interface
         if (initEpOut == null) {
-            Log.w(TAG, "Init HID interface has no OUT endpoint -- cannot send init messages")
-        } else {
-            // MSG_W_HOST_TYPE (0x0060): host type Android (2) as int32_le
-            val hostTypePayload = byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0)
-            val hostTypeFrame = buildHidFrame(MSG_W_HOST_TYPE, hostTypePayload)
-            logHex("HID MSG_W_HOST_TYPE (iface ${initIface.id})", hostTypeFrame)
-            val r1 = conn.bulkTransfer(initEpOut, hostTypeFrame, hostTypeFrame.size, HID_TRANSFER_TIMEOUT_MS)
-            Log.i(TAG, "HID MSG_W_HOST_TYPE: sent $r1/${hostTypeFrame.size} bytes")
-
-            delay(HID_MSG_DELAY_MS)
-
-            // MSG_W_SDK_VERSION (0x0031): null-terminated version string
-            val versionPayload = HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0)
-            val sdkVersionFrame = buildHidFrame(MSG_W_SDK_VERSION, versionPayload)
-            logHex("HID MSG_W_SDK_VERSION (iface ${initIface.id})", sdkVersionFrame)
-            val r2 = conn.bulkTransfer(initEpOut, sdkVersionFrame, sdkVersionFrame.size, HID_TRANSFER_TIMEOUT_MS)
-            Log.i(TAG, "HID MSG_W_SDK_VERSION: sent $r2/${sdkVersionFrame.size} bytes")
-
-            // Read any immediate HID IN response (MCU may send a session token or ACK)
-            if (initEpIn != null) {
-                val inBuf = ByteArray(initEpIn.maxPacketSize.coerceAtLeast(64))
-                val rIn = conn.bulkTransfer(initEpIn, inBuf, inBuf.size, 500)
-                if (rIn > 0) {
-                    logHex("HID IN after SDK_VERSION (iface ${initIface.id})", inBuf.copyOf(rIn))
-                } else {
-                    Log.d(TAG, "HID IN: no immediate response (r=$rIn)")
-                }
-            }
+            Log.w(TAG, "  2: Init HID interface has no OUT endpoint -- cannot send init messages")
+            return
         }
 
-        Log.i(TAG, "HID init done -- waiting ${HID_POST_INIT_DELAY_MS}ms for MCU to settle")
-        delay(HID_POST_INIT_DELAY_MS)
+        // Send HOST_TYPE=2 immediately — this must reach the MCU within its ~300ms config window.
+        // All delays are stripped to minimise time from USB permission grant to 0x26 pings.
+        // Previously: descriptor read + 100ms delay + 500ms read + 200ms wait + 600ms drain = 1400ms.
+        // Now: ~10ms total overhead — 0x26 pings arrive within ~300ms of USB attach.
+        val initStart = System.currentTimeMillis()
+        Log.i(TAG, "  2a: sending HOST_TYPE=2 (msgId=0x60) on iface ${initIface.id}")
+        val hostTypeFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
+        val r1 = conn.bulkTransfer(initEpOut, hostTypeFrame, hostTypeFrame.size, HID_TRANSFER_TIMEOUT_MS)
+        Log.i(
+            TAG,
+            "  2a: HOST_TYPE sent $r1/${hostTypeFrame.size} bytes ${if (r1 == hostTypeFrame.size) "✓" else "✗"} (+${System.currentTimeMillis() - initStart}ms)",
+        )
 
-        // Drain any HID IN data that arrived during the wait
+        // SDK_VERSION immediately after HOST_TYPE — no delay; USB driver serialises the writes.
+        Log.i(TAG, "  2b: sending SDK_VERSION=$HID_SDK_VERSION (msgId=0x31) (+${System.currentTimeMillis() - initStart}ms)")
+        val versionFrame = buildHidFrame(MSG_W_SDK_VERSION, HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0))
+        val r2 = conn.bulkTransfer(initEpOut, versionFrame, versionFrame.size, HID_TRANSFER_TIMEOUT_MS)
+        Log.i(
+            TAG,
+            "  2b: SDK_VERSION sent $r2/${versionFrame.size} bytes ${if (r2 == versionFrame.size) "✓" else "✗"} (+${System.currentTimeMillis() - initStart}ms)",
+        )
+
+        // 0x26 service-ready pings must follow HOST_TYPE=2 within the MCU's config window (~300ms
+        // from USB attach). Skip all response reads and drain loops that previously added 1400ms.
+        Log.i(TAG, "  2c: polling service-ready (msgId=0x26, up to $SERVICE_READY_RETRIES) (+${System.currentTimeMillis() - initStart}ms)")
         if (initEpIn != null) {
-            val inBuf = ByteArray(initEpIn.maxPacketSize.coerceAtLeast(64))
-            repeat(3) {
-                val rIn = conn.bulkTransfer(initEpIn, inBuf, inBuf.size, 200)
-                if (rIn > 0) logHex("HID IN (post-wait, iface ${initIface.id})", inBuf.copyOf(rIn))
-            }
+            pollServiceReady(conn, initIface.id, initEpOut, initEpIn)
+        } else {
+            Log.w(TAG, "  2c: skipping 0x26 poll — epIn missing")
         }
+
+        // Diagnostic: HID descriptor and IN-drain are deferred until after the timing-critical path.
+        val descBuf = ByteArray(256)
+        val dr = conn.controlTransfer(0x81, 0x06, 0x2200, configIface.id, descBuf, descBuf.size, 500)
+        if (dr > 0) logHex("HID descriptor iface ${configIface.id} ($dr bytes)", descBuf.copyOf(dr))
+    }
+
+    /**
+     * Send MSG_SERVICE_READY (0x26) up to [SERVICE_READY_RETRIES] times. Stop as soon as the
+     * MCU replies with msgId != 0x0001 (i.e., something other than a heartbeat).
+     *
+     * RE: wait_for_service_ready_with_handle at 0xae488 sends msgId=0x26, empty payload, and
+     * checks the response. A heartbeat (msgId=0x01) means not-ready; any other response means
+     * SDK config mode is active and GET/SET will be processed.
+     */
+    private fun pollServiceReady(
+        conn: UsbDeviceConnection,
+        ifaceId: Int,
+        epOut: UsbEndpoint,
+        epIn: UsbEndpoint,
+    ) {
+        val pingFrame = buildHidFrame(MSG_SERVICE_READY, ByteArray(0))
+        logHex("HID 0x26 service-ready ping (iface $ifaceId)", pingFrame)
+
+        repeat(SERVICE_READY_RETRIES) { attempt ->
+            val sent = conn.bulkTransfer(epOut, pingFrame, pingFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            if (sent != pingFrame.size) {
+                Log.w(TAG, "0x26 ping attempt ${attempt + 1}: bulk send failed (sent=$sent)")
+                return@repeat
+            }
+
+            // Read response — give MCU up to SERVICE_READY_DELAY_MS to reply
+            val buf = ByteArray(epIn.maxPacketSize.coerceAtLeast(64))
+            val r = conn.bulkTransfer(epIn, buf, buf.size, SERVICE_READY_DELAY_MS.toInt())
+            if (r <= 0) {
+                Log.d(TAG, "0x26 ping attempt ${attempt + 1}: no response within ${SERVICE_READY_DELAY_MS}ms")
+                return@repeat
+            }
+
+            val msgId = (buf[15].toInt() and 0xFF) or ((buf[16].toInt() and 0xFF) shl 8)
+            val innerLen = (buf[5].toInt() and 0xFF) or ((buf[6].toInt() and 0xFF) shl 8)
+            logHex("0x26 response attempt ${attempt + 1} (msgId=0x${msgId.toString(16)} innerLen=$innerLen)", buf.copyOf(r))
+
+            if (msgId != 0x0001) {
+                Log.i(TAG, "MCU service-ready: responded to 0x26 with msgId=0x${msgId.toString(16)} (attempt ${attempt + 1})")
+                return // service ready — proceed to GET/SET
+            }
+            Log.d(TAG, "0x26 attempt ${attempt + 1}: heartbeat (not ready yet)")
+        }
+        Log.w(TAG, "0x26 service-ready: no non-heartbeat response after $SERVICE_READY_RETRIES attempts")
     }
 
     /**
@@ -584,26 +819,43 @@ class GlassesUvcEnabler(
     }
 
     private fun openUsbDevice() {
-        if (usbConnection != null) return
-        val device =
-            usbManager.deviceList.values
-                .firstOrNull { it.vendorId == XRealGlassesCamera.VENDOR_ID && it.productId == XRealGlassesCamera.PRODUCT_ID }
-                ?: run {
-                    Log.w(TAG, "XReal device not found -- skipping USB open")
-                    return
-                }
-
-        if (!usbManager.hasPermission(device)) {
-            Log.w(TAG, "No USB permission -- pilot TCP may still work via NCM kernel driver")
+        if (usbConnection != null) {
+            Log.i(TAG, "  1: USB device already open (fd=${usbConnection!!.fileDescriptor}) — skipping")
             return
         }
+        val vid = XRealGlassesCamera.VENDOR_ID
+        val pid = XRealGlassesCamera.PRODUCT_ID
+        Log.i(TAG, "  1a: scanning USB devices for VID=0x${vid.toString(16)} PID=0x${pid.toString(16)}")
+        val allDevices = usbManager.deviceList.values
+        Log.i(
+            TAG,
+            "  1a: ${allDevices.size} USB device(s) connected: ${allDevices.map {
+                "VID=0x${it.vendorId.toString(
+                    16,
+                )}/PID=0x${it.productId.toString(16)}"
+            }}",
+        )
+        val device =
+            allDevices.firstOrNull { it.vendorId == vid && it.productId == pid }
+                ?: run {
+                    Log.w(TAG, "  1a: XReal device NOT found — cannot open USB (TCP path may still work)")
+                    return
+                }
+        Log.i(TAG, "  1a: XReal device found: ${device.deviceName} (${device.manufacturerName} ${device.productName}) ✓")
+
+        if (!usbManager.hasPermission(device)) {
+            Log.w(TAG, "  1b: USB permission NOT granted — TCP pilot path via NCM may still work")
+            return
+        }
+        Log.i(TAG, "  1b: USB permission granted ✓")
+
         val conn = usbManager.openDevice(device)
         if (conn != null) {
             usbDevice = device
             usbConnection = conn
-            Log.i(TAG, "USB device opened (fd=${conn.fileDescriptor})")
+            Log.i(TAG, "  1c: USB device opened (fd=${conn.fileDescriptor}) ✓")
         } else {
-            Log.w(TAG, "openDevice failed")
+            Log.w(TAG, "  1c: openDevice failed ✗")
         }
     }
 

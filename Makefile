@@ -1,6 +1,7 @@
 JAVA_HOME  := /Applications/Android Studio.app/Contents/jbr/Contents/Home
 ANDROID_SDK := $(HOME)/Library/Android/sdk
-ADB        := $(ANDROID_SDK)/platform-tools/adb
+# Override with: make install DEVICE=192.168.1.230:35717  (or set ANDROID_SERIAL env var)
+ADB        := $(ANDROID_SDK)/platform-tools/adb $(if $(DEVICE),-s $(DEVICE),)
 EMULATOR   := $(ANDROID_SDK)/emulator/emulator
 AVD        := xrdroiddesk_desktop_api34
 APP_ID     := com.repudi8or.xrdroiddesk

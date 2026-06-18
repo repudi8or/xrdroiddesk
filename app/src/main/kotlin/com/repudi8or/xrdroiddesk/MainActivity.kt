@@ -87,14 +87,17 @@ class MainActivity : AppCompatActivity() {
     private fun handleUsbAttached(intent: Intent?) {
         if (intent?.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
 
-        // Fire TCP UVC enable immediately — no USB permission needed.
-        // The MCU only accepts HOST_TYPE=2 within ~2s of USB attach; this races ahead of
-        // the permission dialog so we land inside that window.
-        activityScope.launch(Dispatchers.IO) {
-            val enabler = GlassesUvcEnabler(this@MainActivity)
-            val ok = enabler.enableUvcViaTcp()
-            enabler.release()
-            Log.i(TAG, "TCP UVC enable result: $ok")
+        // TCP UVC enable fallback: only needed when the accessibility service isn't running.
+        // When the service is active, its usbAttachReceiver fires TCP immediately on plug-in
+        // (before this Activity even starts), so firing it again here would be redundant and
+        // could interfere with the re-enumeration the service already triggered.
+        if (GestureAccessibilityService.instance == null) {
+            activityScope.launch(Dispatchers.IO) {
+                val enabler = GlassesUvcEnabler(this@MainActivity)
+                val ok = enabler.enableUvcViaTcp()
+                enabler.release()
+                Log.i(TAG, "TCP UVC enable result: $ok (fallback — service not running)")
+            }
         }
 
         val device: UsbDevice? =
