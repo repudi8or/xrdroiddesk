@@ -1,11 +1,13 @@
 package com.repudi8or.xrdroiddesk
 
+import android.Manifest
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
@@ -17,6 +19,8 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.repudi8or.xrdroiddesk.camera.GlassesUvcEnabler
 import com.repudi8or.xrdroiddesk.camera.XRealGlassesCamera
 import com.repudi8or.xrdroiddesk.service.GestureAccessibilityService
@@ -71,7 +75,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQ_CAMERA)
+        }
+
         handleUsbAttached(intent)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_CAMERA) {
+            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            Log.i(TAG, "CAMERA permission result: granted=$granted")
+            logRequirementsState("cameraPermResult:granted=$granted")
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -278,5 +299,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivity"
         private const val REQ_TAG = "Requirements"
         private const val ACTION_USB_PERMISSION = "com.repudi8or.xrdroiddesk.USB_PERMISSION_MAIN"
+        private const val REQ_CAMERA = 1001
     }
 }

@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
         android:name="android.hardware.usb.host"
@@ -24,10 +25,17 @@
 
         <activity
             android:name=".GrantUsbPermissionActivity"
-            android:exported="false"
+            android:exported="true"
             android:excludeFromRecents="true"
             android:noHistory="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_device_filter" />
+        </activity>
 
         <service
             android:name=".service.GestureAccessibilityService"
