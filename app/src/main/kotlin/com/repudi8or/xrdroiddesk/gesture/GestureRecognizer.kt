@@ -12,7 +12,10 @@ class GestureRecognizer(
         }
 
         if (hand.pinchStrength >= config.pinchThreshold) {
-            return Gesture.Pinch
+            return Gesture.Pinch(
+                x = hand.pointerPose?.x ?: 0.5f,
+                y = hand.pointerPose?.y ?: 0.5f,
+            )
         }
 
         return detectSwipe(hand.pointerPose?.x).also {

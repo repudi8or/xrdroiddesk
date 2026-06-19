@@ -43,7 +43,9 @@ class HandTrackingPipelineTest {
                     com.repudi8or.xrdroiddesk.gesture
                         .Pose(0.5f, 0.5f, 0f),
             )
-        val gesture = com.repudi8or.xrdroiddesk.gesture.Gesture.Pinch
+        val gesture =
+            com.repudi8or.xrdroiddesk.gesture.Gesture
+                .Pinch(x = 0.5f, y = 0.5f)
         every { recognizer.recognize(handData) } returns gesture
 
         pipeline.onHandData(handData)

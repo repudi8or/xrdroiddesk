@@ -113,7 +113,8 @@ class GestureAccessibilityService : AccessibilityService() {
         }
 
     override fun onServiceConnected() {
-        dispatcher = GestureActionDispatcher(AccessibilityDesktopController(this))
+        val controller = AccessibilityDesktopController(this)
+        dispatcher = GestureActionDispatcher(controller, controller::normalizedToPixels)
         instance = this
         registerReceiver(
             usbAttachReceiver,
