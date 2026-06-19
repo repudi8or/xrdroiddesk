@@ -11,6 +11,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
@@ -59,6 +60,7 @@ class XRealGlassesCamera(
     fun hasPermission(device: UsbDevice): Boolean = usbManager.hasPermission(device)
 
     fun open(device: UsbDevice): Boolean {
+        close() // Ensure any prior session is torn down before opening a new connection
         val iface =
             findStreamingInterface(device) ?: run {
                 val hasAnyVideoIface =
@@ -149,17 +151,33 @@ class XRealGlassesCamera(
         iface: UsbInterface,
     ): Boolean {
         val probe = UvcStreamControl.DEFAULT.toBytes()
-        // GET_CUR — ask device what it can offer; ignore result, we send our own preference
+        // GET_CUR — read what camera currently has, then send our preference
         val response = ByteArray(UvcStreamControl.SIZE)
-        conn.controlTransfer(0xA1, UVC_GET_CUR, VS_PROBE_CONTROL, iface.id, response, response.size, TIMEOUT_MS)
+        val getCur = conn.controlTransfer(0xA1, UVC_GET_CUR, VS_PROBE_CONTROL, iface.id, response, response.size, TIMEOUT_MS)
+        Log.i(
+            TAG,
+            "VS_PROBE GET_CUR: $getCur bytes — " +
+                if (getCur >= 4) "fmt=${response[2].toInt() and 0xFF} frame=${response[3].toInt() and 0xFF}" else "short/error",
+        )
         // SET_CUR probe
         val setProbe = conn.controlTransfer(0x21, UVC_SET_CUR.toInt(), VS_PROBE_CONTROL, iface.id, probe, probe.size, TIMEOUT_MS)
+        Log.i(TAG, "VS_PROBE SET_CUR: $setProbe (fmt=1 frame=1 ~15fps)")
         if (setProbe < 0) {
             Log.e(TAG, "VS_PROBE SET_CUR failed: $setProbe")
             return false
         }
-        // SET_CUR commit
-        val commit = conn.controlTransfer(0x21, UVC_SET_CUR.toInt(), VS_COMMIT_CONTROL, iface.id, probe, probe.size, TIMEOUT_MS)
+        // GET_CUR again — read negotiated params (maxPayloadTransferSize etc.) to use in commit
+        val negotiated = ByteArray(UvcStreamControl.SIZE)
+        conn.controlTransfer(0xA1, UVC_GET_CUR, VS_PROBE_CONTROL, iface.id, negotiated, negotiated.size, TIMEOUT_MS)
+        val ctrl = UvcStreamControl.fromBytes(negotiated)
+        Log.i(
+            TAG,
+            "VS_PROBE negotiated: fmt=${ctrl.formatIndex} frame=${ctrl.frameIndex} " +
+                "maxFrame=${ctrl.maxVideoFrameSize} maxPayload=${ctrl.maxPayloadTransferSize}",
+        )
+        // SET_CUR commit with negotiated params
+        val commit = conn.controlTransfer(0x21, UVC_SET_CUR.toInt(), VS_COMMIT_CONTROL, iface.id, negotiated, negotiated.size, TIMEOUT_MS)
+        Log.i(TAG, "VS_COMMIT SET_CUR: $commit")
         if (commit < 0) {
             Log.e(TAG, "VS_COMMIT SET_CUR failed: $commit")
             return false
@@ -171,16 +189,25 @@ class XRealGlassesCamera(
         conn: UsbDeviceConnection,
         endpoint: UsbEndpoint,
     ) {
+        Log.i(TAG, "startReading: ep=0x${endpoint.address.toString(16)} maxPkt=${endpoint.maxPacketSize}")
         readJob =
             scope.launch {
                 val buf = ByteArray(BULK_BUF_SIZE)
                 val frame = ByteArrayOutputStream(BULK_BUF_SIZE * 4)
                 var prevFid = -1
+                var transferCount = 0
+                var timeoutCount = 0
 
-                while (true) {
+                while (isActive) {
                     val read = conn.bulkTransfer(endpoint, buf, buf.size, TIMEOUT_MS)
-                    if (read < 2) continue
-
+                    transferCount++
+                    if (read < 2) {
+                        timeoutCount++
+                        if (timeoutCount <= 5 || timeoutCount % 500 == 0) {
+                            Log.d(TAG, "bulkTransfer #$transferCount: read=$read (timeouts=$timeoutCount)")
+                        }
+                        continue
+                    }
                     val headerLen = (buf[0].toInt() and 0xFF).coerceAtLeast(2)
                     val bfh = buf[1].toInt() and 0xFF
                     val fid = bfh and 0x01

@@ -237,6 +237,27 @@ Composite USB devices detected as audio headsets (`is_headset=true`) cannot be s
 **Requirements state logger (`MainActivity.logRequirementsState`):**
 Logs and displays state of all six prerequisites on every app event (startup, each button press, USB attach, permission result). Filter logcat by tag `Requirements` to see the full sequence. Each line: `a11y_enabled`, `a11y_running`, `usb_found`, `usb_perm`, `uvc_active`, `pending_device`. The phone screen also shows a live summary in `tvStatus`.
 
+#### Key findings from live testing 2026-06-19
+
+**Full autonomous USB permission flow confirmed working:**
+
+Complete zero-interaction flow on plug-in (after one-time CAMERA permission grant):
+1. Non-UVC attach → CG permission dialog → auto-Allow → non-UVC chooser → auto-select Control Glasses
+2. CG enables UVC via HID → glasses re-enumerate with UVC interfaces
+3. UVC attach → CG UVC permission dialog → auto-Allow (+256ms)
+4. GrantUsbPermissionActivity launched (+326ms) → `requestPermission()` → xrdroiddesk USB dialog
+5. xrdroiddesk permission dialog → auto-Allow (+820ms from UVC attach)
+6. `cam.open()` → SUCCESS in 4ms
+
+**Android 16 CAMERA permission requirement for UVC devices:**
+`UsbUserPermissionManager` silently blocks USB `requestPermission()` for UVC devices if the requesting app lacks `android.permission.CAMERA`. This is new in Android 16 — prior versions did not require CAMERA for USB Host UVC access. Fix: declare `android.permission.CAMERA` in manifest and request at runtime in `MainActivity`. NOTE: The prior statement "no `CAMERA` permission needed (USB Host path bypasses Camera2)" is incorrect for Android 16 targets.
+
+**Chooser session memory:** Selecting an app from the USB chooser with "Just once" causes Android to auto-launch that app for subsequent same-VID/PID attaches during the session (no new chooser shown). For the UVC re-enum, CG is auto-launched without a chooser — so xrdroiddesk must use explicit `requestPermission()` via `GrantUsbPermissionActivity`, not rely on a chooser.
+
+**Non-UVC chooser must select Control Glasses (not Cancel):** Tapping "Don't allow" / Cancel on the non-UVC USB chooser prevents Android from showing any chooser for subsequent same-VID/PID attaches (including the UVC re-enum). Must select Control Glasses to keep Android's per-session chooser state open.
+
+**Double-tap issue on chooser (minor):** The non-UVC chooser handler fires 4–6 times on one dialog due to multiple accessibility events for the same UI state. Current code is idempotent (selecting CG multiple times is harmless) — worth debouncing in a future cleanup.
+
 ## Cross-Platform Hand Gesture Abstraction
 
 Writing gesture code against these layers instead of XReal-proprietary APIs means the same code runs on Meta Quest, HoloLens, PICO, HTC Vive Focus, Magic Leap 2, Varjo, and any other OpenXR-conformant device.

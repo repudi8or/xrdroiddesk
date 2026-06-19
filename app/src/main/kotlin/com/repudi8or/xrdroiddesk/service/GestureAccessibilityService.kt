@@ -67,7 +67,8 @@ class GestureAccessibilityService : AccessibilityService() {
                     return
                 }
                 if (intent.action == UsbManager.ACTION_USB_DEVICE_DETACHED) {
-                    Log.i(TAG, "USB_DEVICE_DETACHED: XReal glasses unplugged — resetting state")
+                    Log.i(TAG, "USB_DEVICE_DETACHED: XReal glasses unplugged — stopping camera and resetting state")
+                    camera?.close()
                     retryJob?.cancel()
                     retryJob = null
                     usbSessionActive = false
@@ -242,7 +243,7 @@ class GestureAccessibilityService : AccessibilityService() {
 
         val cam =
             XRealGlassesCamera(this) { jpegBytes ->
-                helper.processJpegFrame(jpegBytes, System.currentTimeMillis())
+                helper.processFrame(jpegBytes, System.currentTimeMillis())
             }
         camera = cam
 
@@ -318,6 +319,7 @@ class GestureAccessibilityService : AccessibilityService() {
                     // CG now has UVC permission. Request it for xrdroiddesk after dialog clears.
                     serviceScope.launch {
                         delay(300)
+                        if (!usbSessionActive) return@launch // camera already opened via another path
                         val usbMan = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
                         val dev =
                             usbMan.deviceList.values.firstOrNull {
