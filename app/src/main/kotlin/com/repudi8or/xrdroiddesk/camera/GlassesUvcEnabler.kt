@@ -87,8 +87,8 @@ class GlassesUvcEnabler(
         // before sending GET/SET. This ping puts the MCU into SDK config mode. Without it, GET
         // returns only heartbeats and SET has no effect.
         private const val MSG_SERVICE_READY = 0x0026
-        private const val SERVICE_READY_RETRIES = 6
-        private const val SERVICE_READY_DELAY_MS = 200L
+        private const val SERVICE_READY_RETRIES = 3
+        private const val SERVICE_READY_DELAY_MS = 30L
         private const val HID_HOST_TYPE_ANDROID = 2 // SDK mode required for glasses to process USB config SET
         private const val HID_SDK_VERSION = "3.3.0"
         private const val HID_TRANSFER_TIMEOUT_MS = 1000
@@ -126,15 +126,17 @@ class GlassesUvcEnabler(
             Log.i(TAG, "  Step 3: HID GET+SET (native SDK path)")
             val hidOk = sendUsbConfigViaHid()
             if (hidOk) {
-                Log.i(TAG, "  Step 3 ✓ HID path complete — expect re-enumeration in ~2s")
+                Log.i(TAG, "  Step 3 ✓ HID path complete — sending HOST_TYPE=1 to restore display")
+                sendHostTypeMsg(1)
                 Log.i(TAG, "═══ enableUvc END (HID path) ═══")
                 true
             } else {
-                Log.w(TAG, "  Step 3 ✗ HID GET only heartbeats — MCU not in config mode")
-                Log.i(TAG, "  Step 4: TCP pilot (diagnostic only — TCP cannot trigger re-enum)")
-                val tcpOk = sendUsbConfigViaTcp()
-                Log.i(TAG, "  Step 4 ${if (tcpOk) "TCP SET sent (no re-enum expected)" else "✗ TCP also failed"}")
-                Log.i(TAG, "═══ enableUvc END (result=false — HID failed; Control Glasses required) ═══")
+                Log.w(TAG, "  Step 3 ✗ HID GET only heartbeats — MCU timing window missed")
+                // TCP path confirmed to never trigger re-enum without prior CG HID init.
+                // Skip it to avoid 10s of TCP connection retries on failure.
+                Log.i(TAG, "  Step 4: restoring display with HOST_TYPE=1 (permission stored — fast path active next plug)")
+                sendHostTypeMsg(1)
+                Log.i(TAG, "═══ enableUvc END (result=false) ═══")
                 false
             }
         }
@@ -188,6 +190,22 @@ class GlassesUvcEnabler(
             out.flush()
             delay(HID_MSG_DELAY_MS)
             drainTcpIn(socket, "  4b: TCP post-GET")
+
+            // Skip SET if UVC is already active — sending SET while in UVC mode triggers a
+            // second re-enum that kills the already-open camera connection.
+            val currentDev =
+                usbManager.deviceList.values.firstOrNull {
+                    it.vendorId == XRealGlassesCamera.VENDOR_ID && it.productId == XRealGlassesCamera.PRODUCT_ID
+                }
+            val uvcAlreadyActive =
+                currentDev != null &&
+                    (0 until currentDev.interfaceCount).any {
+                        currentDev.getInterface(it).interfaceClass == UsbConstants.USB_CLASS_VIDEO
+                    }
+            if (uvcAlreadyActive) {
+                Log.i(TAG, "  4c: UVC already active — skipping TCP SET to avoid second re-enum")
+                return true
+            }
 
             Log.i(TAG, "  4c: TCP SET (msgId=0xD3, payload=0x140 uvc0+enable)")
             val setPayload =
@@ -758,6 +776,14 @@ class GlassesUvcEnabler(
             Log.d(TAG, "0x26 attempt ${attempt + 1}: heartbeat (not ready yet)")
         }
         Log.w(TAG, "0x26 service-ready: no non-heartbeat response after $SERVICE_READY_RETRIES attempts")
+    }
+
+    private fun sendHostTypeMsg(hostType: Int) {
+        val conn = usbConnection ?: return
+        val epOut = hidInitEpOut ?: return
+        val frame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(hostType.toByte(), 0, 0, 0))
+        val sent = conn.bulkTransfer(epOut, frame, frame.size, HID_TRANSFER_TIMEOUT_MS)
+        Log.i(TAG, "HOST_TYPE=$hostType sent $sent/${frame.size} bytes")
     }
 
     /**

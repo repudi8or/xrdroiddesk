@@ -7,27 +7,41 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.net.ConnectivityManager
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.net.InetSocketAddress
+import java.net.Socket
 
 class XRealGlassesCamera(
     private val usbManager: UsbManager,
+    private val connectivityManager: ConnectivityManager? = null,
     private val onFrame: (ByteArray) -> Unit,
 ) {
     constructor(context: Context, onFrame: (ByteArray) -> Unit) : this(
         usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager,
+        connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager,
         onFrame = onFrame,
     )
 
     private var connection: UsbDeviceConnection? = null
     private var streamingIface: UsbInterface? = null
+    private var hidInitIface: UsbInterface? = null
+    private var hidInitEpOut: UsbEndpoint? = null
     private var readJob: Job? = null
+    private var keepAliveJob: Job? = null
+    private var tcpKeepaliveJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO)
+
+    var isOpen: Boolean = false
+        private set
 
     companion object {
         const val VENDOR_ID = 0x3318
@@ -42,6 +56,7 @@ class XRealGlassesCamera(
         private const val VS_COMMIT_CONTROL = 0x0200
         private const val TIMEOUT_MS = 2000
         private const val BULK_BUF_SIZE = 16384
+        private const val PILOT_PORT = 50180
 
         // UVC payload header BFH bits
         private const val BFH_EOF = 0x02
@@ -102,18 +117,54 @@ class XRealGlassesCamera(
         }
         connection = conn
         streamingIface = iface
+        // Claim HID init iface (class=3, first HID) to block CG from sending HOST_TYPE=2
+        // which would put the glasses in SDK-mode and darken the display. We don't send
+        // anything on it — we just hold the claim so CG's HID init fails silently.
+        val hidIface =
+            (0 until device.interfaceCount)
+                .map { device.getInterface(it) }
+                .firstOrNull { it.interfaceClass == UsbConstants.USB_CLASS_HID }
+        if (hidIface != null && conn.claimInterface(hidIface, true)) {
+            hidInitIface = hidIface
+            Log.i(TAG, "HID init iface ${hidIface.id} claimed — sending HOST_TYPE=1 to restore display")
+            // Send HOST_TYPE=1: display-on mode. UVC is already enabled by this point so
+            // switching out of SDK mode (HOST_TYPE=2) restores the display without losing UVC.
+            val epOut =
+                (0 until hidIface.endpointCount)
+                    .map { hidIface.getEndpoint(it) }
+                    .firstOrNull { it.direction == UsbConstants.USB_DIR_OUT }
+            if (epOut != null) {
+                hidInitEpOut = epOut
+                val frame = buildHostTypeFrame(1)
+                val sent = conn.bulkTransfer(epOut, frame, frame.size, 1000)
+                Log.i(TAG, "HOST_TYPE=1 sent $sent/${frame.size} bytes via HID iface ${hidIface.id}")
+            }
+        } else {
+            Log.w(TAG, "HID init iface not claimed — CG may darken display")
+        }
         startReading(conn, endpoint)
+        startHostTypeKeepalive(conn)
+        startTcpHostTypeKeepalive()
+        isOpen = true
         Log.i(TAG, "UVC stream open")
         return true
     }
 
     fun close() {
+        isOpen = false
+        tcpKeepaliveJob?.cancel()
+        keepAliveJob?.cancel()
         readJob?.cancel()
         connection?.releaseInterface(streamingIface)
+        connection?.releaseInterface(hidInitIface)
         connection?.close()
         connection = null
         streamingIface = null
+        hidInitIface = null
+        hidInitEpOut = null
         readJob = null
+        keepAliveJob = null
+        tcpKeepaliveJob = null
     }
 
     private fun findStreamingInterface(device: UsbDevice): UsbInterface? {
@@ -185,6 +236,58 @@ class XRealGlassesCamera(
         return true
     }
 
+    // Sends HOST_TYPE=1 every 200ms to keep the glasses display on.
+    // Re-claims iface 0 on every cycle (not just on failure) so CG cannot hold it
+    // between iterations and send HOST_TYPE=2 (SDK-mode/display-dark).
+    // After each force-reclaim, sends CLEAR_FEATURE(ENDPOINT_HALT) on ep_01 to
+    // clear the stall that accumulates from CG/us fighting over the endpoint.
+    private fun startHostTypeKeepalive(conn: UsbDeviceConnection) {
+        keepAliveJob =
+            scope.launch {
+                // Short startup delay: open() already sent HOST_TYPE=1 synchronously.
+                // CG's Acceptor fires ~0.5s after camera open; start keepalive before that.
+                delay(500)
+                var successCount = 0
+                var failCount = 0
+                while (isActive) {
+                    val iface = hidInitIface ?: break
+                    val ep = hidInitEpOut ?: break
+                    val frame = buildHostTypeFrame(1)
+
+                    // Aggressively re-claim on every cycle to prevent CG from holding
+                    // the interface between iterations.
+                    val claimed = conn.claimInterface(iface, true)
+                    if (!claimed) {
+                        failCount++
+                        if (failCount <= 3 || failCount % 20 == 0) {
+                            Log.d(TAG, "HID keepalive: re-claim FAILED (fail=$failCount)")
+                        }
+                        delay(200)
+                        continue
+                    }
+                    // Clear any stall/halt on ep_01 OUT that accumulates from contention.
+                    // bmRequestType=0x02 (endpoint), bRequest=0x01 (CLEAR_FEATURE),
+                    // wValue=0x0000 (ENDPOINT_HALT), wIndex=ep address.
+                    conn.controlTransfer(0x02, 0x01, 0x0000, ep.address, null, 0, 100)
+
+                    val sent = conn.bulkTransfer(ep, frame, frame.size, 500)
+                    if (sent > 0) {
+                        successCount++
+                        if (successCount == 1 || successCount % 20 == 0) {
+                            Log.i(TAG, "HID keepalive: HOST_TYPE=1 sent $sent bytes (ok=$successCount fail=$failCount)")
+                        }
+                        failCount = 0
+                    } else {
+                        failCount++
+                        if (failCount <= 5 || failCount % 20 == 0) {
+                            Log.d(TAG, "HID keepalive: tx=$sent after clear-halt (ok=$successCount fail=$failCount)")
+                        }
+                    }
+                    delay(200)
+                }
+            }
+    }
+
     private fun startReading(
         conn: UsbDeviceConnection,
         endpoint: UsbEndpoint,
@@ -234,5 +337,104 @@ class XRealGlassesCamera(
                     }
                 }
             }
+    }
+
+    // Sends HOST_TYPE=1 every 50ms via TCP to the pilot daemon at 169.254.1.1:50180.
+    // This path is independent of USB interface claims — CG cannot block it.
+    private fun startTcpHostTypeKeepalive() {
+        val cm = connectivityManager ?: return
+        tcpKeepaliveJob =
+            scope.launch {
+                delay(200)
+                while (isActive) {
+                    val socket = connectTcpPilot(cm)
+                    if (socket == null) {
+                        Log.i(TAG, "TCP HOST_TYPE keepalive: pilot not reachable — retry in 500ms")
+                        delay(500)
+                        continue
+                    }
+                    Log.i(TAG, "TCP HOST_TYPE keepalive: connected")
+                    try {
+                        val out = socket.getOutputStream()
+                        var txCount = 0
+                        while (isActive) {
+                            val frame = buildHostTypeFrame(1)
+                            out.write(frame)
+                            out.flush()
+                            txCount++
+                            if (txCount == 1 || txCount % 200 == 0) {
+                                Log.d(TAG, "TCP HOST_TYPE=1 sent (tx=$txCount)")
+                            }
+                            delay(50)
+                        }
+                    } catch (e: Exception) {
+                        Log.d(TAG, "TCP HOST_TYPE keepalive: disconnected (${e.message}) — reconnecting")
+                    } finally {
+                        try {
+                            socket.close()
+                        } catch (_: IOException) {
+                        }
+                    }
+                }
+            }
+    }
+
+    private fun connectTcpPilot(cm: ConnectivityManager): Socket? {
+        val allNets = cm.allNetworks
+        val ncmNets =
+            allNets.mapNotNull { n ->
+                val addrs =
+                    cm
+                        .getLinkProperties(n)
+                        ?.linkAddresses
+                        ?.mapNotNull { it.address.hostAddress } ?: emptyList()
+                if (addrs.any { it.startsWith("169.254.") }) "$n:$addrs" else null
+            }
+        Log.d(TAG, "TCP pilot: ${allNets.size} networks, NCM candidates: $ncmNets")
+        for (ip in listOf("169.254.1.1", "169.254.2.1")) {
+            try {
+                val prefix = ip.substringBeforeLast(".")
+                val network =
+                    allNets.firstOrNull { n ->
+                        cm
+                            .getLinkProperties(n)
+                            ?.linkAddresses
+                            ?.any { la -> la.address.hostAddress?.startsWith(prefix) == true } == true
+                    }
+                val s = Socket()
+                network?.bindSocket(s)
+                s.connect(InetSocketAddress(ip, PILOT_PORT), 1000)
+                return s
+            } catch (e: Exception) {
+                Log.d(TAG, "TCP pilot: $ip unreachable (${e.message})")
+            }
+        }
+        Log.i(TAG, "TCP pilot: not reachable on any 169.254.x.x network")
+        return null
+    }
+
+    // Builds a minimal G-series HID frame for HOST_TYPE message (msgId=0x60, 4-byte payload).
+    // Same format as GlassesUvcEnabler.buildHidFrame — duplicated here to avoid coupling.
+    private fun buildHostTypeFrame(hostType: Int): ByteArray {
+        val payload = byteArrayOf(hostType.toByte(), 0, 0, 0)
+        val totalLen = 22 + payload.size
+        val innerLen = totalLen - 5
+        val buf = ByteArray(totalLen + 1)
+        buf[0] = 0xfd.toByte()
+        buf[5] = (innerLen and 0xFF).toByte()
+        buf[6] = ((innerLen shr 8) and 0xFF).toByte()
+        buf[15] = 0x60.toByte() // MSG_W_HOST_TYPE
+        buf[16] = 0x00
+        System.arraycopy(payload, 0, buf, 22, payload.size)
+        var crc = innerLen.inv() and 0xFF
+        for (i in 6 until 6 + innerLen) {
+            crc = crc xor (buf[i].toInt() and 0xFF)
+            repeat(8) { crc = if (crc and 1 != 0) (crc ushr 1) xor 0xEDB88320.toInt() else crc ushr 1 }
+        }
+        buf[1] = (crc and 0xFF).toByte()
+        buf[2] = ((crc shr 8) and 0xFF).toByte()
+        buf[3] = ((crc shr 16) and 0xFF).toByte()
+        buf[4] = ((crc shr 24) and 0xFF).toByte()
+        return buf.copyOf(totalLen)
     }
 }

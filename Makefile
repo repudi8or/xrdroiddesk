@@ -65,9 +65,22 @@ install: build  ## Install debug APK on connected device/emulator
 run: install  ## Install and launch MainActivity
 	$(ADB) shell am start -n $(ACTIVITY)
 
+LOG_FILE := /data/local/tmp/xr_log.txt
+LOG_TAGS  := '*:S' XRealGlassesCamera:D GestureA11yService:I GlassesUvcEnabler:I Requirements:I MainActivity:I ActivityManager:I H264FrameDecoder:W HandLandmarker:I GestureRecognizer:I GestureDispatcher:I DesktopController:I
+
 .PHONY: logcat
 logcat:  ## Stream filtered logcat for this app
 	$(ADB) logcat --pid=$$($(ADB) shell pidof -s $(APP_ID)) -v time
+
+.PHONY: log-start
+log-start:  ## Start on-device filtered log capture (survives ADB disconnect); clears previous log
+	$(ADB) shell "kill \$$(ps -A | grep logcat | grep ' 1 ' | awk '{print \$$2}') 2>/dev/null; logcat -c; rm -f $(LOG_FILE); nohup logcat -v time $(LOG_TAGS) > $(LOG_FILE) 2>&1 &"
+	@sleep 1
+	@$(ADB) shell "ps -A | grep logcat | grep ' 1 ' | awk '{print \"  logcat running: pid=\"\$$2}'"
+
+.PHONY: log-pull
+log-pull:  ## Pull the on-device log file to stdout
+	$(ADB) shell "cat $(LOG_FILE) 2>/dev/null || echo '(log file not found)'"
 
 .PHONY: devices
 devices:  ## List connected ADB devices

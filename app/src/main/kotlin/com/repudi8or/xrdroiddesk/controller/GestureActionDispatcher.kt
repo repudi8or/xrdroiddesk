@@ -1,5 +1,6 @@
 package com.repudi8or.xrdroiddesk.controller
 
+import android.util.Log
 import com.repudi8or.xrdroiddesk.gesture.Gesture
 
 class GestureActionDispatcher(
@@ -23,6 +24,16 @@ class GestureActionDispatcher(
                 is Gesture.SwipeLeft -> DesktopAction.Swipe(SwipeDirection.Left)
                 is Gesture.SwipeRight -> DesktopAction.Swipe(SwipeDirection.Right)
             }
+        val msg = "gesture: $gesture → $action"
+        Log.i(TAG, msg)
+        com.repudi8or.xrdroiddesk.MainActivity.instance?.runOnUiThread {
+            com.repudi8or.xrdroiddesk.MainActivity.instance
+                ?.appendLog(msg)
+        }
         controller.perform(action)
+    }
+
+    companion object {
+        private const val TAG = "GestureDispatcher"
     }
 }

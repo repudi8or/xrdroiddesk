@@ -73,6 +73,7 @@ class GrantUsbPermissionActivity : Activity() {
                             "Fix: Settings → Apps → Control Glasses → Open by default → " +
                             "Clear defaults, then unplug/replug glasses and pick xrdroiddesk.",
                     )
+                    GestureAccessibilityService.instance?.onUsbPermissionDenied()
                 }
                 finish()
             }

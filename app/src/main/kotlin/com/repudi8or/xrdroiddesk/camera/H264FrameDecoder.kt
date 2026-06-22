@@ -30,6 +30,9 @@ internal class H264FrameDecoder(
     @Volatile private var configuring = false
 
     @Volatile private var closed = false
+    private val droppedCount =
+        java.util.concurrent.atomic
+            .AtomicLong(0)
     private var srcWidth = 640
     private var srcHeight = 480
 
@@ -67,7 +70,10 @@ internal class H264FrameDecoder(
                     val bitmap = image?.toScaledBitmap(srcWidth, srcHeight, DST_W, DST_H)
                     image?.close()
                     mc.releaseOutputBuffer(index, false)
-                    if (bitmap != null && !closed) onBitmap(bitmap)
+                    if (bitmap != null && !closed) {
+                        Log.d(TAG, "bitmap → MediaPipe ${bitmap.width}x${bitmap.height}")
+                        onBitmap(bitmap)
+                    }
                 } else {
                     mc.releaseOutputBuffer(index, false)
                 }
@@ -104,6 +110,11 @@ internal class H264FrameDecoder(
     fun submit(bytes: ByteArray) {
         if (closed) return
         if (!isAnnexB(bytes)) {
+            val n = droppedCount.incrementAndGet()
+            if (n == 1L || n % 100L == 0L) {
+                val magic = bytes.take(4).joinToString(" ") { "%02x".format(it.toInt() and 0xFF) }
+                Log.w(TAG, "non-Annex-B frame #$n dropped — magic: $magic (camera may be MJPEG, not HEVC)")
+            }
             warmUp()
             return
         }
@@ -229,8 +240,8 @@ private fun android.media.Image.toScaledBitmap(
         val srcRow = row * yStep
         for (col in 0 until dstW / 2) {
             val idx = srcRow * uvStride + col * xStep * uvPixelStride
-            if (idx < vBytes.size) nv21[uvDst++] = vBytes[idx]
-            if (idx < uBytes.size) nv21[uvDst++] = uBytes[idx]
+            nv21[uvDst++] = if (idx < vBytes.size) vBytes[idx] else 128.toByte()
+            nv21[uvDst++] = if (idx < uBytes.size) uBytes[idx] else 128.toByte()
         }
     }
 
