@@ -132,6 +132,9 @@ class GestureAccessibilityService : AccessibilityService() {
                 ) {
                     return
                 }
+                if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
+                    lastBroadcastUsbDevice = device
+                }
                 if (intent.action == UsbManager.ACTION_USB_DEVICE_DETACHED) {
                     uiLog("USB detached — camera stopped, scheduling reconnect in 2s")
                     camera?.close()
@@ -144,6 +147,7 @@ class GestureAccessibilityService : AccessibilityService() {
                     cgChooserClickPending = false
                     cgPermTapped = false
                     cgCameraToggleTapped = false
+                    lastBroadcastUsbDevice = null
                     // lastLaunchedDisplayId intentionally NOT reset here — the glasses display
                     // persists through the non-UVC → UVC re-enum (it's an NCM/ECM display, not
                     // USB video). onDisplayRemoved resets it if the display actually disappears.
@@ -225,11 +229,10 @@ class GestureAccessibilityService : AccessibilityService() {
                         }
                     }
                 } else {
-                    // Slow path: no stored permission. ARM CG-Allow (in case CG's real USB
-                    // permission dialog appears — button "Allow", not the "open CG?" button "OK").
-                    // ALSO request our own permission so the fast-path (HID at ~50ms) activates
-                    // on the next plug cycle. First plug: HID timing window is missed (permission
-                    // grant takes ~300ms). Second plug: stored permission → HID at ~50ms → works.
+                    // Slow path: no stored permission. ARM CG-Allow so CG can enable UVC via HID.
+                    // Use device from broadcast extra directly — on Android 12+, getDeviceList()
+                    // filters out devices we have no permission for, so a fresh lookup would return
+                    // null. The broadcast-delivered device object is valid regardless of permission.
                     cgAllowPhase = true
                     handleCgUsbDialog()
                     if (!selfPermPending) {
@@ -237,22 +240,14 @@ class GestureAccessibilityService : AccessibilityService() {
                         serviceScope.launch {
                             delay(50L)
                             val usbMan2 = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
-                            val dev2 =
-                                usbMan2.deviceList.values.firstOrNull {
-                                    it.vendorId == XRealGlassesCamera.VENDOR_ID &&
-                                        it.productId == XRealGlassesCamera.PRODUCT_ID
-                                } ?: run {
-                                    selfPermPending = false
-                                    return@launch
-                                }
-                            if (usbMan2.hasPermission(dev2)) {
+                            if (usbMan2.hasPermission(device)) {
                                 selfPermPending = false
-                                openCamera(dev2)
+                                openCamera(device)
                                 return@launch
                             }
                             startActivity(
                                 Intent(this@GestureAccessibilityService, GrantUsbPermissionActivity::class.java).apply {
-                                    putExtra(UsbManager.EXTRA_DEVICE, dev2)
+                                    putExtra(UsbManager.EXTRA_DEVICE, device)
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 },
                                 ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY).toBundle(),
@@ -302,6 +297,11 @@ class GestureAccessibilityService : AccessibilityService() {
         if (usbSessionActive) {
             handleCgUsbDialog()
             handleCgSettingsScreen()
+        } else if (camera?.isOpen == true) {
+            // Camera is running — still deny any CG USB dialog that appears.
+            // CG claiming USB Host after we've opened the camera would run its Acceptor,
+            // send HOST_TYPE=2, and darken the display.
+            handleCgUsbDialog()
         }
         if (uvcPhaseActive || selfPermPending) handleXrdroideskPermDialog()
     }
@@ -336,7 +336,7 @@ class GestureAccessibilityService : AccessibilityService() {
 
     fun tryConnectCamera() {
         val cam = camera ?: return
-        val device = cam.findDevice()
+        val device = cam.findDevice() ?: lastBroadcastUsbDevice
         if (device == null) {
             Log.w(TAG, "XReal glasses not found — retrying in ${RETRY_DELAY_MS}ms")
             retryJob?.cancel()
@@ -394,7 +394,7 @@ class GestureAccessibilityService : AccessibilityService() {
                             usbMan3.deviceList.values.firstOrNull {
                                 it.vendorId == XRealGlassesCamera.VENDOR_ID &&
                                     it.productId == XRealGlassesCamera.PRODUCT_ID
-                            } ?: run {
+                            } ?: lastBroadcastUsbDevice ?: run {
                                 selfPermPending = false
                                 return@launch
                             }
@@ -457,6 +457,11 @@ class GestureAccessibilityService : AccessibilityService() {
         if (opened) {
             uiLog("camera open OK (${elapsedMs}ms)")
             usbSessionActive = false
+            // Reset so launchOnGlassesDisplay() runs even if it already ran from onDisplayAdded.
+            // GrantUsbPermissionActivity launching on display 0 (phone) causes Android desktop mode
+            // to move the MainActivity task on the glasses display to the "hidden list". Resetting
+            // here ensures we re-launch MainActivity and pull it out of the hidden list.
+            lastLaunchedDisplayId = Display.INVALID_DISPLAY
             launchOnGlassesDisplay()
             return
         }
@@ -694,34 +699,25 @@ class GestureAccessibilityService : AccessibilityService() {
             }
         } else {
             // Permission dialog (no chooser)
-            if (uvcPhaseActive) {
+            if (uvcPhaseActive || camera?.isOpen == true) {
                 // DENY CG USB Host access to the UVC device. The external display is already
                 // created via NCM/ECM (it appears before USB_DEVICE_ATTACHED fires to us), so
                 // CG does not need USB Host permission to maintain the display. Allowing it
                 // would start CG's Acceptor, which claims HID iface 0 and sends HOST_TYPE=2
                 // repeatedly, fighting our keepalive and eventually darkening the display.
+                // Also deny when camera is already open — CG reclaiming USB after us darkens display.
                 val deny = findNegativeButton(dialogRoot) ?: return
-                uiLog("CG permission (UVC phase): DENY tapped (+${elapsed}ms) — blocking Acceptor")
+                uiLog("CG permission (UVC/cam phase): DENY tapped (+${elapsed}ms) — blocking Acceptor")
                 deny.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                if (!selfPermPending) {
+                if (!selfPermPending && uvcPhaseActive) {
                     selfPermPending = true
                     scheduleCameraPermissionRequest()
                 }
             } else if (cgAllowPhase && !cgPermTapped) {
-                // Non-UVC phase: tap "Allow" (USB permission dialog) or "OK" (Android 16
-                // confirmation dialog). Both grant CG USB permission and trigger its Acceptor,
-                // which sends HID HOST_TYPE=2 + GET + SET → UVC re-enum in ~2s. Confirmed
-                // working: tapping OK here causes UVC to enable correctly.
-                val allow =
-                    findClickableByText(dialogRoot, "Allow")
-                        ?: findClickableByText(dialogRoot, "OK")
-                        ?: return
-                val allowText = (allow.text?.toString() ?: allow.contentDescription?.toString() ?: "").trim()
-                if (!allowText.equals("Allow", ignoreCase = true) &&
-                    !allowText.equals("OK", ignoreCase = true)
-                ) {
-                    return
-                }
+                // Non-UVC phase: tap "Allow" or "OK" on CG's USB permission dialog.
+                // Uses findPositiveButton (exact-text match) to avoid matching "Don't allow"
+                // as a substring of "Allow" — substring match caused silent no-op previously.
+                val allow = findPositiveButton(dialogRoot) ?: return
                 uiLog("CG permission: Allow tapped (+${elapsed}ms)")
                 cgPermTapped = true
                 allow.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -739,6 +735,8 @@ class GestureAccessibilityService : AccessibilityService() {
             val usbMan = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
             // Prefer the UVC-capable device — both the old non-UVC device and the newly
             // enumerated UVC device can be present with the same VID/PID at this moment.
+            // Fall back to lastBroadcastUsbDevice: getDeviceList() filters out devices we
+            // have no permission for on Android 12+, so it may return empty here.
             val dev =
                 usbMan.deviceList.values
                     .filter {
@@ -748,7 +746,7 @@ class GestureAccessibilityService : AccessibilityService() {
                         (0 until d.interfaceCount).count {
                             d.getInterface(it).interfaceClass == UsbConstants.USB_CLASS_VIDEO
                         }
-                    } ?: return@launch
+                    } ?: lastBroadcastUsbDevice ?: return@launch
             if (usbMan.hasPermission(dev)) {
                 Log.i(TAG, "scheduleCameraPermissionRequest: already have perm — opening camera")
                 openCamera(dev)
@@ -1059,5 +1057,10 @@ class GestureAccessibilityService : AccessibilityService() {
         // Set by MainActivity when USB_DEVICE_ATTACHED fires before the service is running.
         // Consumed in startHandTracking() to open the camera directly with the OS-granted permission.
         var pendingUsbDevice: UsbDevice? = null
+
+        // Last XREAL device seen via USB_DEVICE_ATTACHED (set by static UsbDeviceReceiver and by
+        // the dynamic receiver). Fallback when getDeviceList() returns empty (Android 12+: filters
+        // out devices we have no permission for, so the device is invisible without a stored ref).
+        var lastBroadcastUsbDevice: UsbDevice? = null
     }
 }
