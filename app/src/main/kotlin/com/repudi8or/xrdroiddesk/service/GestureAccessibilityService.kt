@@ -111,9 +111,7 @@ class GestureAccessibilityService : AccessibilityService() {
                     return
                 }
                 if (intent.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
-                retryJob?.cancel()
-                retryJob = null
-                usbSetup.onDeviceAttached(device)
+                onUsbDeviceAttached(device)
             }
         }
 
@@ -182,6 +180,15 @@ class GestureAccessibilityService : AccessibilityService() {
 
     fun onUsbPermissionDenied() {
         usbSetup.onUsbPermissionDenied()
+    }
+
+    // Called by both the manifest-registered UsbAttachReceiver (fast, ~30ms) and the
+    // dynamic usbAttachReceiver (~130ms). UsbSetupAutomator.onDeviceAttached() is
+    // idempotent via hidEnablePending, so the second call is a no-op.
+    fun onUsbDeviceAttached(device: UsbDevice) {
+        retryJob?.cancel()
+        retryJob = null
+        usbSetup.onDeviceAttached(device)
     }
 
     fun tryConnectCamera() {
