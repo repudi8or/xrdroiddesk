@@ -173,12 +173,18 @@ internal class H264FrameDecoder(
         }
     }
 
-    private fun isAnnexB(bytes: ByteArray): Boolean =
-        bytes.size >= 5 &&
-            bytes[0] == 0.toByte() &&
-            bytes[1] == 0.toByte() &&
-            bytes[2] == 0.toByte() &&
-            bytes[3] == 1.toByte()
+    companion object {
+        private const val TAG = "H264FrameDecoder"
+        private const val DST_W = 640
+        private const val DST_H = 480
+
+        internal fun isAnnexB(bytes: ByteArray): Boolean =
+            bytes.size >= 5 &&
+                bytes[0] == 0.toByte() &&
+                bytes[1] == 0.toByte() &&
+                bytes[2] == 0.toByte() &&
+                bytes[3] == 1.toByte()
+    }
 
     override fun close() {
         closed = true
@@ -189,12 +195,6 @@ internal class H264FrameDecoder(
         }
         codec.release()
         callbackThread.quitSafely()
-    }
-
-    companion object {
-        private const val TAG = "H264FrameDecoder"
-        private const val DST_W = 640
-        private const val DST_H = 480
     }
 }
 

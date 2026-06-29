@@ -20,6 +20,7 @@ import com.repudi8or.xrdroiddesk.camera.HandTrackingPipeline
 import com.repudi8or.xrdroiddesk.camera.XRealGlassesCamera
 import com.repudi8or.xrdroiddesk.controller.AccessibilityDesktopController
 import com.repudi8or.xrdroiddesk.controller.GestureActionDispatcher
+import com.repudi8or.xrdroiddesk.gesture.GestureConfig
 import com.repudi8or.xrdroiddesk.gesture.GestureRecognizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -312,7 +313,7 @@ class GestureAccessibilityService : AccessibilityService() {
             }
         camera = cam
 
-        val pl = HandTrackingPipeline(cam, GestureRecognizer(), dispatcher)
+        val pl = HandTrackingPipeline(cam, GestureRecognizer(GestureConfig(pinchThreshold = 0.15f)), dispatcher)
         pipeline = pl
 
         val pending = pendingUsbDevice
