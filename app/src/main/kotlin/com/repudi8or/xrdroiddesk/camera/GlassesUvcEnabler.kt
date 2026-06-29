@@ -17,12 +17,20 @@ import java.nio.ByteOrder
 /**
  * Enables UVC mode on XReal One Pro glasses via HID USB commands.
  *
- * Matches CG's `prepareCheckNcm` path (libota-lib.so / NRBSPGetUsbConfigAll + NRBSPSetUsbConfigAll):
+ * Full sequence (RE'd from libota-lib.so via jadx, confirmed against CG behaviour):
  *   1. Open USB device (permission must already be granted)
  *   2. Claim HID init interface (iface 0, ep_01 OUT / ep_81 IN, maxPkt=1024)
- *   3. Send GET (0xD2) — NO HOST_TYPE=2 first (that puts MCU in SDK mode, breaks GET)
- *   4. If GET returns real config (innerLen > 17): SET (0xD3) with currentConfig | uvc0 | enable
- *   5. Glasses re-enumerate with UVC interfaces in ~2s
+ *   3. HOST_TYPE=2 — puts MCU in SDK/config mode (required; without it GET returns heartbeats)
+ *   4. SDK_VERSION — announces SDK version string to MCU
+ *   5. Delay ~200ms for MCU to enter config mode
+ *   6. GET (0xD2) — reads current USB config bitmask
+ *   7. SET (0xD3) with currentConfig | uvc0(bit6) | enable(bit8) = 0x140
+ *   8. Glasses re-enumerate with UVC interfaces in ~2s
+ *
+ * Timing: HOST_TYPE must arrive within ~100ms of USB attach for the MCU config window.
+ * This is only achievable on the fast path (USB permission already granted from a prior plug).
+ * On first plug (permission dialog shown), HOST_TYPE arrives too late and enableUvc() returns false.
+ * Second plug uses the fast path and succeeds.
  *
  * RE sources: libota-lib.so (XrealGlasses class in CG APK), jadx + Frida on Control Glasses.
  */
@@ -57,20 +65,22 @@ class GlassesUvcEnabler(
         private const val HID_TRANSFER_TIMEOUT_MS = 1000
         private const val HID_RESPONSE_TIMEOUT_MS = 500
 
-        // Wait up to this long for a real GET response (innerLen > 17).
-        // CG waits up to 5s for the ping gate; we poll GET directly instead.
-        private const val GET_RESPONSE_WAIT_MS = 3000L
+        // GET_RESPONSE_WAIT_MS: how long to poll for a real GET response after HOST_TYPE+SDK_VERSION.
+        // On the fast path (HOST_TYPE within ~100ms of attach) the MCU should respond quickly.
+        // Keep this short — if we're still getting heartbeats after 1.5s, the window was missed.
+        private const val GET_RESPONSE_WAIT_MS = 1500L
     }
 
     /**
-     * Enable UVC by sending GET (0xD2) → SET (0xD3) without any HOST_TYPE=2 init.
+     * Enable UVC by sending HOST_TYPE=2 → SDK_VERSION → GET (0xD2) → SET (0xD3).
      *
      * Returns true if SET was sent after a real GET response, indicating re-enum is in progress.
-     * Returns false if GET only returned heartbeats (MCU not responding to config commands).
+     * Returns false if GET only returned heartbeats (MCU config window was missed — try again
+     * on the next plug, which will use the fast path since USB permission is now stored).
      */
     suspend fun enableUvc(): Boolean =
         withContext(Dispatchers.IO) {
-            Log.i(TAG, "═══ enableUvc START (GET→SET, no HOST_TYPE) ═══")
+            Log.i(TAG, "═══ enableUvc START ═══")
             openUsbDevice()
 
             val conn =
@@ -107,13 +117,29 @@ class GlassesUvcEnabler(
 
             Log.i(TAG, "HID iface ${hidIface.id} ep_out=0x${epOut.address.toString(16)} ep_in=0x${epIn?.address?.toString(16) ?: "none"}")
 
-            // GET current config — no HOST_TYPE=2 beforehand
+            // Step 1: HOST_TYPE=2 — opens MCU config window (~100ms from USB attach)
+            val htFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
+            logHex("HOST_TYPE frame", htFrame)
+            val htSent = conn.bulkTransfer(epOut, htFrame, htFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "HOST_TYPE sent $htSent/${htFrame.size}")
+
+            // Step 2: SDK_VERSION
+            val versionPayload = HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0)
+            val vFrame = buildHidFrame(MSG_W_SDK_VERSION, versionPayload)
+            logHex("SDK_VERSION frame", vFrame)
+            val vSent = conn.bulkTransfer(epOut, vFrame, vFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "SDK_VERSION sent $vSent/${vFrame.size}")
+
+            // Step 3: wait for MCU to process HOST_TYPE and enter config mode
+            delay(HID_POST_INIT_DELAY_MS)
+
+            // Step 4: GET current config
             val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
             logHex("GET frame", getFrame)
             val gSent = conn.bulkTransfer(epOut, getFrame, getFrame.size, HID_TRANSFER_TIMEOUT_MS)
             Log.i(TAG, "GET sent $gSent/${getFrame.size}")
 
-            // Wait for real GET response (innerLen > 17 = has payload beyond header)
+            // Step 5: wait for real GET response (innerLen > 17 means config payload present)
             var currentConfig = 0
             var gotConfig = false
             if (epIn != null) {
@@ -147,61 +173,10 @@ class GlassesUvcEnabler(
             }
 
             if (!gotConfig) {
-                // CG hasn't initialized the MCU (Acceptor missed its window or is blocked).
-                // Fall back: send HOST_TYPE=2 + SDK_VERSION to put MCU in SDK/config mode,
-                // then retry GET. The display may go dark briefly, but it's already dark here.
-                Log.i(TAG, "GET heartbeats — HOST_TYPE=2 fallback: initializing MCU ourselves")
-                val htFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
-                logHex("HOST_TYPE frame", htFrame)
-                val htSent = conn.bulkTransfer(epOut, htFrame, htFrame.size, HID_TRANSFER_TIMEOUT_MS)
-                Log.i(TAG, "HOST_TYPE sent $htSent/${htFrame.size}")
-
-                val versionPayload = HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0)
-                val vFrame = buildHidFrame(MSG_W_SDK_VERSION, versionPayload)
-                logHex("SDK_VERSION frame", vFrame)
-                val vSent = conn.bulkTransfer(epOut, vFrame, vFrame.size, HID_TRANSFER_TIMEOUT_MS)
-                Log.i(TAG, "SDK_VERSION sent $vSent/${vFrame.size}")
-
-                delay(HID_POST_INIT_DELAY_MS)
-
-                // Retry GET after HOST_TYPE=2
-                val getFrame2 = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
-                logHex("GET retry frame", getFrame2)
-                val gSent2 = conn.bulkTransfer(epOut, getFrame2, getFrame2.size, HID_TRANSFER_TIMEOUT_MS)
-                Log.i(TAG, "GET retry sent $gSent2/${getFrame2.size}")
-
-                if (epIn != null) {
-                    val deadline2 = System.currentTimeMillis() + GET_RESPONSE_WAIT_MS
-                    while (System.currentTimeMillis() < deadline2) {
-                        val buf2 = ByteArray(1024)
-                        val r2 = conn.bulkTransfer(epIn, buf2, buf2.size, HID_RESPONSE_TIMEOUT_MS)
-                        if (r2 < 7) continue
-                        val innerLen2 = (buf2[5].toInt() and 0xFF) or ((buf2[6].toInt() and 0xFF) shl 8)
-                        val msgId2 = (buf2[15].toInt() and 0xFF) or ((buf2[16].toInt() and 0xFF) shl 8)
-                        if (innerLen2 > 17 && r2 >= 26) {
-                            currentConfig =
-                                (buf2[22].toInt() and 0xFF) or
-                                ((buf2[23].toInt() and 0xFF) shl 8) or
-                                ((buf2[24].toInt() and 0xFF) shl 16) or
-                                ((buf2[25].toInt() and 0xFF) shl 24)
-                            Log.i(
-                                TAG,
-                                "GET real response (after HOST_TYPE) innerLen=$innerLen2 msgId=0x${msgId2.toString(
-                                    16,
-                                )} currentConfig=0x${currentConfig.toString(16)} ✓",
-                            )
-                            gotConfig = true
-                            break
-                        } else {
-                            Log.d(TAG, "GET heartbeat (after HOST_TYPE) innerLen=$innerLen2 msgId=0x${msgId2.toString(16)}")
-                        }
-                    }
-                }
-
-                if (!gotConfig) {
-                    Log.w(TAG, "═══ enableUvc END result=false (GET heartbeats even after HOST_TYPE=2) ═══")
-                    return@withContext false
-                }
+                // HOST_TYPE arrived too late (MCU config window ~100ms missed — slow path).
+                // USB permission is now stored; next plug will use fast path and succeed.
+                Log.w(TAG, "═══ enableUvc END result=false (GET heartbeats — MCU config window missed; retry on next plug) ═══")
+                return@withContext false
             }
 
             // SET: current config OR'd with uvc0(bit6)|enable(bit8)

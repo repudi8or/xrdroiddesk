@@ -27,9 +27,11 @@ class GrantUsbPermissionActivity : Activity() {
             finish()
             return
         }
+        // Notify service early — Activity fires at ~50ms via manifest filter, before the
+        // dynamic receiver (~130ms). skipActivityLaunch=true prevents a duplicate launch.
+        GestureAccessibilityService.instance?.onManifestUsbAttached(device)
         if (usbManager.hasPermission(device)) {
-            Log.d(TAG, "Permission already granted")
-            GestureAccessibilityService.instance?.openCamera(device)
+            Log.d(TAG, "Permission already granted — service handles camera via onManifestUsbAttached")
             finish()
             return
         }

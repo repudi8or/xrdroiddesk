@@ -47,16 +47,29 @@ class UsbSetupAutomator(
     private var cgCameraToggleTapped = false
     private var usbAttachTimestampMs = 0L
 
+    // Set when the manifest-filter GrantUsbPermissionActivity notifies us via
+    // onDeviceAttached(skipActivityLaunch=true). Prevents the 200ms coroutine from
+    // launching a duplicate Activity on top of the one already started by Android.
+    private var manifestActivityStarted = false
+
     private val windows get() = windowsProvider()
 
     // -------------------------------------------------------------------------
     // USB lifecycle — called from usbAttachReceiver
     // -------------------------------------------------------------------------
 
-    fun onDeviceAttached(device: UsbDevice) {
+    // skipActivityLaunch=true when called from GrantUsbPermissionActivity itself — prevents
+    // a duplicate activity launch from the 50ms-delayed coroutine.
+    fun onDeviceAttached(
+        device: UsbDevice,
+        skipActivityLaunch: Boolean = false,
+    ) {
         lastKnownDevice = device
-        usbAttachTimestampMs = System.currentTimeMillis()
+        if (!usbSessionActive) usbAttachTimestampMs = System.currentTimeMillis()
         usbSessionActive = true
+        // Record manifest Activity launch BEFORE selfPermPending check so the coroutine
+        // guard below sees it even when the dynamic receiver set selfPermPending first.
+        if (skipActivityLaunch) manifestActivityStarted = true
         if (device.hasUvc()) {
             cgAllowPhase = false
             uvcPhaseActive = true
@@ -74,31 +87,40 @@ class UsbSetupAutomator(
         } else {
             val usbMan = context.getSystemService(Context.USB_SERVICE) as UsbManager
             if (usbMan.hasPermission(device)) {
-                hidEnablePending = true
-                cgAllowPhase = true
-                handleCgUsbDialog()
-                uiLog("USB attached: non-UVC — fast path (have perm) + arming CG-Allow")
-                launchHidEnable()
+                if (!hidEnablePending) {
+                    hidEnablePending = true
+                    cgAllowPhase = true
+                    handleCgUsbDialog()
+                    uiLog("USB attached: non-UVC — fast path (have perm), enabling UVC via HID")
+                    launchHidEnable()
+                }
             } else {
                 cgAllowPhase = true
                 handleCgUsbDialog()
                 if (!selfPermPending) {
                     selfPermPending = true
-                    scope.launch {
-                        delay(50L)
-                        val usbMan2 = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                        if (usbMan2.hasPermission(device)) {
-                            selfPermPending = false
-                            onCameraReady(device)
-                            return@launch
+                    if (!skipActivityLaunch) {
+                        scope.launch {
+                            delay(200L)
+                            // Manifest Activity may have fired between now and when we started
+                            // this coroutine. If so, it already called requestPermission() —
+                            // launching a second Activity would overwrite that PendingIntent and
+                            // freeze the first dialog's OK button.
+                            if (manifestActivityStarted) return@launch
+                            val usbMan2 = context.getSystemService(Context.USB_SERVICE) as UsbManager
+                            if (usbMan2.hasPermission(device)) {
+                                selfPermPending = false
+                                onCameraReady(device)
+                                return@launch
+                            }
+                            context.startActivity(
+                                Intent(context, GrantUsbPermissionActivity::class.java).apply {
+                                    putExtra(UsbManager.EXTRA_DEVICE, device)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                },
+                                ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY).toBundle(),
+                            )
                         }
-                        context.startActivity(
-                            Intent(context, GrantUsbPermissionActivity::class.java).apply {
-                                putExtra(UsbManager.EXTRA_DEVICE, device)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            },
-                            ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY).toBundle(),
-                        )
                     }
                 }
                 uiLog("USB attached: non-UVC — no perm, arming CG-Allow + requesting own perm")
@@ -113,9 +135,11 @@ class UsbSetupAutomator(
         uvcPhaseActive = false
         hidEnablePending = false
         selfPermPending = false
+        manifestActivityStarted = false
         cgChooserClickPending = false
         cgPermTapped = false
         cgCameraToggleTapped = false
+        usbAttachTimestampMs = 0L
     }
 
     // -------------------------------------------------------------------------
@@ -127,29 +151,13 @@ class UsbSetupAutomator(
      * [onHidFailed] is invoked on the main thread if HID enable returns false,
      * so the service can schedule a camera retry.
      */
-    fun armNonUvcWithPerm(
-        device: UsbDevice,
-        onHidFailed: () -> Unit,
-    ) {
+    fun armNonUvcWithPerm(device: UsbDevice) {
         usbSessionActive = true
         hidEnablePending = true
         cgAllowPhase = true
         handleCgUsbDialog()
-        Log.i(TAG, "tryConnectCamera: non-UVC — have perm, arming CG-Allow + enabling UVC via HID")
-        scope.launch {
-            try {
-                val enabler = GlassesUvcEnabler(context)
-                val ok = enabler.enableUvc()
-                enabler.release()
-                uiLog("HID enableUvc: ${if (ok) "✓ awaiting UVC re-enum" else "✗ CG path active"}")
-                if (!ok) {
-                    handleCgUsbDialog()
-                    onHidFailed()
-                }
-            } finally {
-                hidEnablePending = false
-            }
-        }
+        Log.i(TAG, "tryConnectCamera: non-UVC — have perm, enabling UVC via HID")
+        launchHidEnable()
     }
 
     /**
@@ -163,7 +171,8 @@ class UsbSetupAutomator(
         if (!selfPermPending) {
             selfPermPending = true
             scope.launch {
-                delay(50L)
+                delay(200L)
+                if (manifestActivityStarted) return@launch
                 val usbMan = context.getSystemService(Context.USB_SERVICE) as UsbManager
                 val dev =
                     usbMan.deviceList.values.firstOrNull {
@@ -226,24 +235,8 @@ class UsbSetupAutomator(
         handleCgUsbDialog()
         if (!hidEnablePending) {
             hidEnablePending = true
-            Log.i(TAG, "openCamera: non-UVC with perm — arming CG-Allow + enabling UVC via HID")
-            scope.launch {
-                try {
-                    val enabler = GlassesUvcEnabler(context)
-                    val ok = enabler.enableUvc()
-                    enabler.release()
-                    uiLog(
-                        if (ok) {
-                            "HID enableUvc: ✓ awaiting UVC re-enum"
-                        } else {
-                            "HID enableUvc: ✗ CG path active (permission now stored)"
-                        },
-                    )
-                    if (!ok) handleCgUsbDialog()
-                } finally {
-                    hidEnablePending = false
-                }
-            }
+            Log.i(TAG, "openCamera: non-UVC with perm — enabling UVC via HID")
+            launchHidEnable()
         }
     }
 
@@ -274,10 +267,12 @@ class UsbSetupAutomator(
         uvcPhaseActive = false
         hidEnablePending = false
         selfPermPending = false
+        manifestActivityStarted = false
         cgChooserClickPending = false
         cgPermTapped = false
         cgCameraToggleTapped = false
         lastKnownDevice = null
+        usbAttachTimestampMs = 0L
     }
 
     // -------------------------------------------------------------------------
@@ -285,13 +280,15 @@ class UsbSetupAutomator(
     // -------------------------------------------------------------------------
 
     private fun launchHidEnable() {
-        scope.launch {
+        // Use IO dispatcher so the coroutine starts on a background thread immediately,
+        // without waiting for the main thread to finish Activity lifecycle work.
+        // This keeps HOST_TYPE arrival within the ~100ms MCU config window.
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val enabler = GlassesUvcEnabler(context)
                 val ok = enabler.enableUvc()
                 enabler.release()
-                uiLog("HID enableUvc: ${if (ok) "✓ awaiting UVC re-enum" else "✗ CG path active"}")
-                if (!ok) handleCgUsbDialog()
+                uiLog("HID enableUvc: ${if (ok) "✓ awaiting UVC re-enum" else "✗ MCU window missed"}")
             } finally {
                 hidEnablePending = false
             }

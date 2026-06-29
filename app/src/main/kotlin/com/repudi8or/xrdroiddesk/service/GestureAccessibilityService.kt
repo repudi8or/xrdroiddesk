@@ -71,6 +71,19 @@ class GestureAccessibilityService : AccessibilityService() {
             override fun onDisplayChanged(displayId: Int) {}
         }
 
+    private val debugResetReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                Log.i(TAG, "debug reset received")
+                camera?.close()
+                usbSetup.reset()
+                tryConnectCamera()
+            }
+        }
+
     private val usbAttachReceiver =
         object : BroadcastReceiver() {
             override fun onReceive(
@@ -143,8 +156,14 @@ class GestureAccessibilityService : AccessibilityService() {
         } else {
             registerReceiver(usbAttachReceiver, usbFilter)
         }
+        registerReceiver(
+            debugResetReceiver,
+            IntentFilter(ACTION_DEBUG_RESET),
+            RECEIVER_NOT_EXPORTED,
+        )
         startHandTracking()
         startStateLogger()
+        scanPreAttachedCamera()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -162,6 +181,10 @@ class GestureAccessibilityService : AccessibilityService() {
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         try {
             unregisterReceiver(usbAttachReceiver)
+        } catch (_: Exception) {
+        }
+        try {
+            unregisterReceiver(debugResetReceiver)
         } catch (_: Exception) {
         }
         getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayListener)
@@ -182,13 +205,34 @@ class GestureAccessibilityService : AccessibilityService() {
         usbSetup.onUsbPermissionDenied()
     }
 
-    // Called by both the manifest-registered UsbAttachReceiver (fast, ~30ms) and the
-    // dynamic usbAttachReceiver (~130ms). UsbSetupAutomator.onDeviceAttached() is
-    // idempotent via hidEnablePending, so the second call is a no-op.
+    // Called by the dynamic usbAttachReceiver (~130ms after plug-in).
+    // UsbSetupAutomator.onDeviceAttached() is idempotent via hidEnablePending.
     fun onUsbDeviceAttached(device: UsbDevice) {
         retryJob?.cancel()
         retryJob = null
         usbSetup.onDeviceAttached(device)
+        retryJob =
+            serviceScope.launch {
+                delay(RETRY_DELAY_MS)
+                tryConnectCamera()
+            }
+    }
+
+    // Called from GrantUsbPermissionActivity.onCreate() — Android launches it via
+    // USB_DEVICE_ATTACHED manifest filter at ~50ms, earlier than the dynamic receiver.
+    // skipActivityLaunch=true prevents the 50ms-delayed coroutine from launching a
+    // second GrantUsbPermissionActivity while the first is still on screen.
+    fun onManifestUsbAttached(device: UsbDevice) {
+        retryJob?.cancel()
+        retryJob = null
+        usbSetup.onDeviceAttached(device, skipActivityLaunch = true)
+        // Schedule a retry so UVC re-enum (or next plug) is picked up even if the
+        // USB_DEVICE_ATTACHED re-delivery is missed.
+        retryJob =
+            serviceScope.launch {
+                delay(RETRY_DELAY_MS)
+                tryConnectCamera()
+            }
     }
 
     fun tryConnectCamera() {
@@ -213,14 +257,12 @@ class GestureAccessibilityService : AccessibilityService() {
             retryJob = null
             val usbMan = getSystemService(Context.USB_SERVICE) as UsbManager
             if (usbMan.hasPermission(device)) {
-                usbSetup.armNonUvcWithPerm(device, onHidFailed = {
-                    retryJob?.cancel()
-                    retryJob =
-                        serviceScope.launch {
-                            delay(RETRY_DELAY_MS)
-                            tryConnectCamera()
-                        }
-                })
+                usbSetup.armNonUvcWithPerm(device)
+                retryJob =
+                    serviceScope.launch {
+                        delay(RETRY_DELAY_MS)
+                        tryConnectCamera()
+                    }
             } else {
                 usbSetup.armNonUvcNoPerm(device)
                 retryJob =
@@ -279,6 +321,23 @@ class GestureAccessibilityService : AccessibilityService() {
                 delay(RETRY_DELAY_MS)
                 tryConnectCamera()
             }
+    }
+
+    private fun scanPreAttachedCamera() {
+        val usbMan = getSystemService(Context.USB_SERVICE) as UsbManager
+        val device =
+            usbMan.deviceList.values.firstOrNull {
+                it.vendorId == XRealGlassesCamera.VENDOR_ID &&
+                    it.productId == XRealGlassesCamera.PRODUCT_ID
+            } ?: return
+        val hasUvc =
+            (0 until device.interfaceCount).any { i ->
+                device.getInterface(i).interfaceClass == UsbConstants.USB_CLASS_VIDEO
+            }
+        if (hasUvc && usbMan.hasPermission(device)) {
+            Log.i(TAG, "scanPreAttachedCamera: UVC device found with permission — opening camera")
+            openCamera(device)
+        }
     }
 
     private fun launchOnGlassesDisplay() {
@@ -510,6 +569,7 @@ class GestureAccessibilityService : AccessibilityService() {
         private const val RETRY_DELAY_MS = 3000L
         private const val CAMERA_RECONNECT_DELAY_MS = 2000L
         private const val STATE_LOG_INTERVAL_MS = 3000L
+        const val ACTION_DEBUG_RESET = "com.repudi8or.xrdroiddesk.ACTION_DEBUG_RESET"
 
         var instance: GestureAccessibilityService? = null
             private set
