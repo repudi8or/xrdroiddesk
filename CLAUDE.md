@@ -258,6 +258,26 @@ Complete zero-interaction flow on plug-in (after one-time CAMERA permission gran
 
 **Double-tap issue on chooser (minor):** The non-UVC chooser handler fires 4–6 times on one dialog due to multiple accessibility events for the same UI state. Current code is idempotent (selecting CG multiple times is harmless) — worth debouncing in a future cleanup.
 
+#### Key findings from community feedback 2026-07-01
+
+**Android 16 rapid Pause/Resume cycle — confirmed by another developer (Unity + NRSDK, One Pro + Eye):**
+On Android 16, Control Glasses aggressively competes for USB intents, causing a rapid Pause→Resume lifecycle on any app that also handles USB_DEVICE_ATTACHED for the same VID/PID. Their symptom: NRSDK camera plugin crashes (`Plugin Start failed: retcode=1`) because the SDK starts and stops the camera simultaneously. Their fix: revoke Camera + Mic from CG, add 1.5s startup delay.
+
+**What applies to our project (USB Host path, not Camera2):**
+
+- The Pause/Resume cycle is real and hardware-level — not NRSDK-specific. Our AccessibilityService doesn't have an `onPause`, so lifecycle disruption is less severe, but the USB stack instability window is the same ~1.5s they observed. This confirms our retry logic and delay tuning are correctly scoped.
+- **Revoking Camera permission from CG** (`adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA`) does not affect our UVC path — we use USB Host, not Camera2. CG's HID enable sequence (HOST_TYPE + GET + SET) uses USB Host permission, not Camera. Revoking Camera may reduce CG's lifecycle aggression during development by preventing it from starting its own camera pipeline. Worth trying as a dev environment setup step.
+- **`openCamera()` timing**: calling it immediately on UVC_DEVICE_ATTACHED may hit the USB stack before it stabilizes (~1.5s window). Current retry logic absorbs this, but an explicit 200–500ms delay before `cam.open()` in the UVC attach path could reduce intermittent failures on first open.
+- Their Camera/Mic revoke does NOT replace the need for CG to have USB Host permission — CG must retain USB Host access to act as Acceptor and send the HID UVC-enable sequence.
+
+**Dev environment tip (reduces CG interference during testing):**
+```bash
+# Revoke Camera from CG — reduces Pause/Resume aggression, no effect on HID/UVC enable
+adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
+# Restore when done testing
+adb shell pm grant com.xreal.glassescontrol.store android.permission.CAMERA
+```
+
 ## Cross-Platform Hand Gesture Abstraction
 
 Writing gesture code against these layers instead of XReal-proprietary APIs means the same code runs on Meta Quest, HoloLens, PICO, HTC Vive Focus, Magic Leap 2, Varjo, and any other OpenXR-conformant device.
