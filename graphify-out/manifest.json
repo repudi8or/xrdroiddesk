@@ -1,0 +1,252 @@
+{
+  ".claude/settings.json": {
+    "mtime": 1782710052.1957538,
+    "ast_hash": "0a2b25a294cc4d5a9f66132402015dda",
+    "semantic_hash": ""
+  },
+  "app/build.gradle.kts": {
+    "mtime": 1779616306.2637897,
+    "ast_hash": "28caeadd5bbbfbead82298f43529e438",
+    "semantic_hash": "28caeadd5bbbfbead82298f43529e438"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/GrantUsbPermissionActivity.kt": {
+    "mtime": 1782729193.24516,
+    "ast_hash": "ea0355adc6f3f9e148ed33682cdc5ee1",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/MainActivity.kt": {
+    "mtime": 1782097758.631203,
+    "ast_hash": "18a91273d53105a30ded363a023b3ed9",
+    "semantic_hash": "18a91273d53105a30ded363a023b3ed9"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/GlassesUvcEnabler.kt": {
+    "mtime": 1782728139.1505632,
+    "ast_hash": "859b24280dbe7855a357e3094798bed8",
+    "semantic_hash": "859b24280dbe7855a357e3094798bed8"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/H264FrameDecoder.kt": {
+    "mtime": 1782725378.28831,
+    "ast_hash": "d67eba8be73a1c0676bec97e92a859f0",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/HandLandmarkerHelper.kt": {
+    "mtime": 1782097708.6117902,
+    "ast_hash": "ef2d94374e57b7cdbacd1786105981d7",
+    "semantic_hash": "ef2d94374e57b7cdbacd1786105981d7"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/HandTrackingPipeline.kt": {
+    "mtime": 1779615293.9673643,
+    "ast_hash": "13417bbecb5eda0c4133395f578be23d",
+    "semantic_hash": "13417bbecb5eda0c4133395f578be23d"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/LandmarkToHandData.kt": {
+    "mtime": 1779615294.007754,
+    "ast_hash": "5b7faa75b6c5526b75180d34568cd562",
+    "semantic_hash": "5b7faa75b6c5526b75180d34568cd562"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/PilotProtocol.kt": {
+    "mtime": 1779672148.0904343,
+    "ast_hash": "7feca83b8d3bb13e39c98302df8fb9d7",
+    "semantic_hash": "7feca83b8d3bb13e39c98302df8fb9d7"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/UvcStreamControl.kt": {
+    "mtime": 1779615294.0421505,
+    "ast_hash": "e6efe9cd96ca9040fbbf67aa491e58e3",
+    "semantic_hash": "e6efe9cd96ca9040fbbf67aa491e58e3"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/camera/XRealGlassesCamera.kt": {
+    "mtime": 1782097708.7925673,
+    "ast_hash": "685bb2c756f40c88b89ea583d19321b0",
+    "semantic_hash": "685bb2c756f40c88b89ea583d19321b0"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/controller/AccessibilityDesktopController.kt": {
+    "mtime": 1782097717.2442625,
+    "ast_hash": "305a3a0d6bebffffec4da424d89f1b9e",
+    "semantic_hash": "305a3a0d6bebffffec4da424d89f1b9e"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/controller/DesktopAction.kt": {
+    "mtime": 1779615294.184716,
+    "ast_hash": "28215985951629126b8f8970af9d7877",
+    "semantic_hash": "28215985951629126b8f8970af9d7877"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/controller/DesktopController.kt": {
+    "mtime": 1779611004.460488,
+    "ast_hash": "11098e3b60ae9011c708c41fe9017ed1",
+    "semantic_hash": "11098e3b60ae9011c708c41fe9017ed1"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/controller/GestureActionDispatcher.kt": {
+    "mtime": 1782097708.856178,
+    "ast_hash": "73e70f55e8e1979116a4a25f07274b02",
+    "semantic_hash": "73e70f55e8e1979116a4a25f07274b02"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/gesture/Gesture.kt": {
+    "mtime": 1781854635.0676746,
+    "ast_hash": "9a4755c8163a3f008e74c4681e09282c",
+    "semantic_hash": "9a4755c8163a3f008e74c4681e09282c"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/gesture/GestureConfig.kt": {
+    "mtime": 1782710239.2992275,
+    "ast_hash": "e60ad7828861ef87ad7e4ffb456d1468",
+    "semantic_hash": ""
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/gesture/GestureRecognizer.kt": {
+    "mtime": 1782097708.889664,
+    "ast_hash": "d265296f7178dd9c1d86985c9b90eb45",
+    "semantic_hash": "d265296f7178dd9c1d86985c9b90eb45"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/gesture/HandData.kt": {
+    "mtime": 1779612872.2356641,
+    "ast_hash": "ebca74088170bd24c9baf8cad5cea1a2",
+    "semantic_hash": "ebca74088170bd24c9baf8cad5cea1a2"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/gesture/Pose.kt": {
+    "mtime": 1779612872.2358103,
+    "ast_hash": "e57c8b5674b31435a3c9a8dda393959e",
+    "semantic_hash": "e57c8b5674b31435a3c9a8dda393959e"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/service/GestureAccessibilityService.kt": {
+    "mtime": 1782774518.5324936,
+    "ast_hash": "9c97a3ce6e060c8f4d6844faef56170b",
+    "semantic_hash": ""
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/camera/HandTrackingPipelineTest.kt": {
+    "mtime": 1781854634.9181159,
+    "ast_hash": "5e3dcf81799d9f12770f62e3cd696a04",
+    "semantic_hash": "5e3dcf81799d9f12770f62e3cd696a04"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/camera/LandmarkToHandDataTest.kt": {
+    "mtime": 1779615292.963655,
+    "ast_hash": "d9c0cebf4f60ac5e6b02ea04a009a3a3",
+    "semantic_hash": "d9c0cebf4f60ac5e6b02ea04a009a3a3"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/camera/UvcStreamControlTest.kt": {
+    "mtime": 1779615292.9878557,
+    "ast_hash": "b76dc8f5e1ff8934f2f939ff2a394e97",
+    "semantic_hash": "b76dc8f5e1ff8934f2f939ff2a394e97"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/camera/XRealGlassesCameraTest.kt": {
+    "mtime": 1779616335.8669806,
+    "ast_hash": "591ee8de1677463246b37b7d65e5f87f",
+    "semantic_hash": "591ee8de1677463246b37b7d65e5f87f"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/controller/DesktopActionTest.kt": {
+    "mtime": 1779611004.4618363,
+    "ast_hash": "fe74de60b9b7a7d392e367e543fb7a1f",
+    "semantic_hash": "fe74de60b9b7a7d392e367e543fb7a1f"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/controller/GestureActionDispatcherTest.kt": {
+    "mtime": 1781854616.1436431,
+    "ast_hash": "2be3f41d6062a6430c629d9c023d4fc9",
+    "semantic_hash": "2be3f41d6062a6430c629d9c023d4fc9"
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/gesture/GestureRecognizerTest.kt": {
+    "mtime": 1781854597.033144,
+    "ast_hash": "52b801a7523a8736c3cac408ddb5b951",
+    "semantic_hash": "52b801a7523a8736c3cac408ddb5b951"
+  },
+  "build.gradle.kts": {
+    "mtime": 1779609897.5775652,
+    "ast_hash": "52e86569e631b00253c5d0a4f95aeba6",
+    "semantic_hash": "52e86569e631b00253c5d0a4f95aeba6"
+  },
+  "frida/hook_cg_hid.js": {
+    "mtime": 1782288464.8057957,
+    "ast_hash": "938dfc0a179498f2c6ea1192c3312d5c",
+    "semantic_hash": "938dfc0a179498f2c6ea1192c3312d5c"
+  },
+  "gradlew": {
+    "mtime": 1779609836.0917003,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": "794669d78aef1dd5c7d889ef618b311a"
+  },
+  "settings.gradle.kts": {
+    "mtime": 1779609896.8620503,
+    "ast_hash": "440ea2184cb5ca00a210d429e03ec963",
+    "semantic_hash": "440ea2184cb5ca00a210d429e03ec963"
+  },
+  ".pre-commit-config.yaml": {
+    "mtime": 1779609927.3824348,
+    "ast_hash": "c631e7a181a6b1f39c9909c21f8d9ab4",
+    "semantic_hash": "c631e7a181a6b1f39c9909c21f8d9ab4"
+  },
+  "CLAUDE.md": {
+    "mtime": 1782710268.0235558,
+    "ast_hash": "e82d2e2dce7b832f0963b6961bb33f96",
+    "semantic_hash": "e82d2e2dce7b832f0963b6961bb33f96"
+  },
+  "README.md": {
+    "mtime": 1779609069.4669201,
+    "ast_hash": "b30c0e68adc4d15530459e01ef25803c",
+    "semantic_hash": "b30c0e68adc4d15530459e01ef25803c"
+  },
+  "frida/README.md": {
+    "mtime": 1782288516.0182366,
+    "ast_hash": "78d3ee722c9ea5068d46b5936d9a297c",
+    "semantic_hash": "78d3ee722c9ea5068d46b5936d9a297c"
+  },
+  "images/xr_frame.jpg": {
+    "mtime": 1782017075.2037277,
+    "ast_hash": "ffb95506c13693a59075393038ba22e2",
+    "semantic_hash": "ffb95506c13693a59075393038ba22e2"
+  },
+  "images/xr_frame_20260620_1436.jpg": {
+    "mtime": 1781932230.4976983,
+    "ast_hash": "aa3e73d323f52a067d0abbd60d7227fa",
+    "semantic_hash": "aa3e73d323f52a067d0abbd60d7227fa"
+  },
+  "images/xr_frame_20260620_1447.jpg": {
+    "mtime": 1781932623.2760315,
+    "ast_hash": "b7ab608e52a626c809b2c3168ad95143",
+    "semantic_hash": "b7ab608e52a626c809b2c3168ad95143"
+  },
+  "images/xr_frame_20260620_1457.jpg": {
+    "mtime": 1781933275.7416892,
+    "ast_hash": "cf928e184d0baeb28108d9de953ecc83",
+    "semantic_hash": "cf928e184d0baeb28108d9de953ecc83"
+  },
+  "app/src/main/kotlin/com/repudi8or/xrdroiddesk/service/UsbSetupAutomator.kt": {
+    "mtime": 1782774485.2189684,
+    "ast_hash": "ca28c6d18f0471271d377daa9954123b",
+    "semantic_hash": ""
+  },
+  ".claude/settings.local.json": {
+    "mtime": 1782774464.9281948,
+    "ast_hash": "fe05f2accbb733ee76c7104c036f4720",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1782709925.2824996,
+    "ast_hash": "b5b5d954a3590a5b905bc56cfd16e633",
+    "semantic_hash": ""
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/camera/H264FrameDecoderTest.kt": {
+    "mtime": 1782725378.1191056,
+    "ast_hash": "5af91a74106d27df941bf96485771a1a",
+    "semantic_hash": ""
+  },
+  "app/src/test/kotlin/com/repudi8or/xrdroiddesk/controller/AccessibilityDesktopControllerTest.kt": {
+    "mtime": 1782725378.2096288,
+    "ast_hash": "18d14cc78b985daea73bc6b27fb0cb3d",
+    "semantic_hash": ""
+  },
+  "current_feature.md": {
+    "mtime": 1782774107.0672386,
+    "ast_hash": "45f186be28262df663e6958934c9d364",
+    "semantic_hash": ""
+  },
+  "prompt_template.md": {
+    "mtime": 1782731344.3135164,
+    "ast_hash": "f6aee8ab69abc08980b26ff8609f0a60",
+    "semantic_hash": ""
+  },
+  "prompt_template.md.orig.md": {
+    "mtime": 1782730314.588165,
+    "ast_hash": "714280b0885847140f997b3d6c3a63fa",
+    "semantic_hash": ""
+  },
+  "session-boot-template.md": {
+    "mtime": 1782731370.4973228,
+    "ast_hash": "a68900ba545591a0f65efa1bc0c568f4",
+    "semantic_hash": ""
+  }
+}

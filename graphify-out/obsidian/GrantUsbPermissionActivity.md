@@ -1,0 +1,21 @@
+---
+source_file: "app/src/main/kotlin/com/repudi8or/xrdroiddesk/GrantUsbPermissionActivity.kt"
+type: "code"
+community: "Camera Device Tests"
+location: "L16"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Camera_Device_Tests
+---
+
+# GrantUsbPermissionActivity
+
+## Connections
+- [[.onCreate()]] - `method` [EXTRACTED]
+- [[.onDestroy()]] - `method` [EXTRACTED]
+- [[Activity]] - `inherits` [EXTRACTED]
+- [[GrantUsbPermissionActivity.kt]] - `contains` [EXTRACTED]
+- [[UsbManager]] - `references` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Camera_Device_Tests

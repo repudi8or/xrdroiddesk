@@ -1,6 +1,6 @@
 # AGENTS.md — xrdroiddesk
 # Agent Role Definitions & Loop Structure
-# Version: 1.1
+# Version: 1.2
 # Location: /xrdroiddesk/AGENTS.md
 
 ---
@@ -12,7 +12,8 @@ and voice input to control Android Desktop mode on a Google Pixel 10 Pro. The gl
 a UVC camera over USB-C; MediaPipe processes frames into hand landmarks; an AccessibilityService
 dispatches gestures to the desktop. No proprietary XReal SDK is used.
 
-Work is broken into milestones tracked as GitHub Issues. Development follows a structured
+Work is driven by feature prompts — the user provides a description and acceptance criteria
+directly to the Orchestrator. No external tracker required. Development follows a structured
 agent loop — each agent has a narrow role, minimal context, and a defined handoff format.
 
 ---
@@ -35,7 +36,7 @@ and halt. No agent proceeds past a gate until the response is typed or pasted ba
 **Architect — open questions (BLOCKING):**
 ```
 🟡 HALT — Architect: Input Required
-Issue: #XX — [title]
+Feature: [title]
 Questions:
 1. [question]
 2. [question]
@@ -45,7 +46,7 @@ Reply inline, then type: resume
 **Device Tester — device session (BLOCKING):**
 ```
 🔵 HALT — Device Session Required
-Issue: #XX — [title]
+Feature: [title]
 USB state going in: [UVC active | non-UVC | first-plug]
 
 Steps:
@@ -67,7 +68,7 @@ Paste completed form below, then type: resume
 ```
 🏁 HALT — Milestone Complete
 Milestone: [name]
-Issues: #XX, #XX
+Features completed: [list]
 Next: [name]
 Type APPROVE to proceed or HOLD to pause.
 ```
@@ -133,9 +134,9 @@ Use when: any acceptance criterion requires physical glasses or phone interactio
 Typical: UVC, HID, USB permission flow, AccessibilityService dispatch, display output.
 
 ```
-GitHub Issue
+Feature prompt (description + acceptance criteria)
     ↓
-[Architect]      — reads issue + CLAUDE.md once → context_packet.json
+[Architect]      — reads prompt + CLAUDE.md once → context_packet.json
     ↓
 [Builder]        — reads context_packet.json only (never CLAUDE.md)
     ↓
@@ -231,16 +232,16 @@ path is missing, unexpected, or ambiguous.
 
 ### 1. Architect Agent  *(full loop only)*
 
-**Trigger:** A new GitHub Issue is opened for a milestone feature.
+**Trigger:** A feature prompt arrives with no `context_packet.json` in `.agent-state/`.
 
 **Purpose:**
-Translate the issue into a minimal spec. Distill all relevant hardware context from CLAUDE.md
-into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
+Translate the feature prompt into a minimal spec. Distill all relevant hardware context from
+CLAUDE.md into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
 
 **Reads:**
-- GitHub Issue: title, description, acceptance criteria
+- Feature prompt: title, description, acceptance criteria (from user's session message)
 - CLAUDE.md — hardware findings, timing constraints, USB state notes
-- Previous context_packet.json (continuity across issues in a milestone)
+- Previous context_packet.json (continuity across features in a milestone)
 - graphify — run the planning workflow from the Graphify section before setting file_targets
 
 **Graphify planning workflow (required):**
@@ -256,7 +257,7 @@ into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
 ```json
 {
   "milestone": "string",
-  "github_issue": "#XX — title",
+  "feature": "short title from prompt",
   "loop": "full",
   "scope": ["in-scope items"],
   "out_of_scope": ["explicit exclusions"],
@@ -286,12 +287,12 @@ into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
 
 ### 2. Builder Agent
 
-**Trigger:** Quick loop: inline spec exists. Full loop: context_packet.json with no open_questions.
+**Trigger:** Quick loop: feature prompt is self-contained (≤ 3 criteria, no hardware). Full loop: `context_packet.json` with no open_questions.
 
 **Purpose:** Implement exactly what the spec defines. No scope expansion.
 
 **Reads:**
-- Quick loop: inline spec (3 lines max) + file_targets
+- Quick loop: feature prompt directly (3 criteria max) + file_targets from prompt
 - Full loop: `.agent-state/context_packet.json` only (including `graphify_context`)
 - graphify — run the implementation workflow before touching any file
 - Raw source files in file_targets only (after graphify orientation)
@@ -313,7 +314,7 @@ into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
 **Never reads:** CLAUDE.md, GitHub issues, files outside file_targets, previous session history.
 
 **Rules:**
-- `./gradlew ktlintFormat` must pass before producing diff_summary
+- `make fmt && make check` must pass before producing diff_summary
 - Tests required for gesture logic and any new public API
 - Hardware-specific code must cite the CLAUDE.md finding in a one-line comment (e.g., `// CLAUDE.md: "MCU config window <100ms"`)
 - No fallback paths for hardware states not in hardware_constraints
@@ -324,7 +325,7 @@ into context_packet.json so no downstream agent ever needs to read CLAUDE.md.
 
 ```markdown
 ## Diff Summary
-- **Issue:** #XX / inline spec
+- **Feature:** [title] / inline spec
 - **Loop:** quick | full
 - **Files changed:** list
 - **Layers:** camera|gesture|controller|service|ui
@@ -438,7 +439,7 @@ touches device_testable_criteria — skip re-running criteria already confirmed.
 
 **Trigger:** critic_report.md result = PASS.
 
-**Purpose:** Commit, PR, close issue. Never touches source code.
+**Purpose:** Commit and (optionally) open PR. Never touches source code.
 
 **Reads:**
 - `.agent-state/critic_report.md`
@@ -446,10 +447,10 @@ touches device_testable_criteria — skip re-running criteria already confirmed.
 - Current git status
 
 **Actions:**
-1. `./gradlew ktlintFormat` — final lint pass
-2. Commit: `[type]: [description] (#XX)`
-3. Push + open PR: title matches commit; body lists ✅ criteria + observation evidence
-4. Close or transition GitHub Issue
+1. `make fmt` — final lint pass
+2. Commit: `[type]: [description]`
+3. Push branch
+4. Open PR if requested by user (title matches commit; body lists ✅ criteria + observation evidence)
 5. If milestone complete → print 🏁 block and halt
 
 **Token budget:** Minimal.
@@ -466,8 +467,9 @@ touches device_testable_criteria — skip re-running criteria already confirmed.
 
 **Routing:**
 ```
-no context_packet.json AND no inline spec       → ask human: quick or full loop?
-inline spec present                             → quick loop → Builder
+feature prompt received, no context_packet.json
+  + prompt is ≤ 3 criteria, no hardware         → quick loop → Builder directly
+  + prompt has hardware criteria                → full loop → Architect
 context_packet.json present
   + open_questions unresolved                   → HALT 🟡
   + no diff_summary.md                         → Builder
@@ -490,7 +492,7 @@ milestone complete                              → HALT 🏁
 
 | File | Written by | Read by | Notes |
 |---|---|---|---|
-| `context_packet.json` | Architect | Builder, Device Tester, Critic | Only way hardware context propagates |
+| `context_packet.json` | Architect | Builder, Device Tester, Critic | Only way hardware context propagates; Architect reads CLAUDE.md so others don't have to |
 | `diff_summary.md` | Builder | Device Tester, Critic, Sync | Lint status must be PASS |
 | `observation_form.md` | Device Tester + human | Critic | One form per issue; no re-halts |
 | `critic_report.md` | Critic | Sync, Orchestrator | |
@@ -532,20 +534,43 @@ All files live in `.agent-state/` (gitignored). Clear between issues.
 6. **Critic reads diff first.** Source files only when criteria can't be confirmed otherwise.
 7. **Stay in role.** Do not reason about inputs outside your defined reads.
 8. **Flag don't fix.** Out-of-scope findings are flagged, not silently added.
-9. **Lint must pass.** `./gradlew ktlintFormat` before any handoff.
+9. **Lint must pass.** `make fmt` before any handoff (sets correct `JAVA_HOME` — raw `./gradlew` fails outside Android Studio).
 10. **Milestone gates need APPROVE.** No agent starts a new milestone autonomously.
+
+---
+
+## How to Start a Loop
+
+Open a fresh Claude Code session in this repo and paste:
+
+```
+Read AGENTS.md. Run as Orchestrator.
+
+Feature: [short title]
+
+Description:
+[2–5 sentences — what this does and why]
+
+Acceptance criteria:
+- [ ] [criterion 1]
+- [ ] [criterion 2]
+- [ ] make check passes
+```
+
+The Orchestrator reads the prompt, decides quick vs full loop, and routes to the right agent.
+No `.agent-state/` setup required — Orchestrator creates it on first run.
 
 ---
 
 ## Current Milestones
 
-| # | Milestone | GitHub Issue | Status |
-|---|---|---|---|
-| 1 | Zero-interaction UVC enable + camera open | — | **Done** |
-| 2 | Full gesture pipeline — pinch/swipe → desktop click | — | In progress |
-| 3 | Phone screen off — glasses desktop remains active | — | Not started |
-| 4 | Voice keyboard input in glasses desktop | — | Not started |
-| 5 | macOS companion app (KMP + Swift/CGEvent) | — | Stretch |
+| # | Milestone | Status |
+|---|---|---|
+| 1 | Zero-interaction UVC enable + camera open | **Done** |
+| 2 | Full gesture pipeline — pinch/swipe → desktop click | In progress |
+| 3 | Phone screen off — glasses desktop remains active | Not started |
+| 4 | Voice keyboard input in glasses desktop | Not started |
+| 5 | macOS companion app (KMP + Swift/CGEvent) | Stretch |
 
 ---
 

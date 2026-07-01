@@ -1,0 +1,4446 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "USB Setup & Dialog Automation",
+      "x": 0,
+      "y": 0,
+      "width": 1320,
+      "height": 720,
+      "color": "1"
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcnoperm",
+      "type": "file",
+      "file": ".armNonUvcNoPerm().md",
+      "x": 20,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcwithperm",
+      "type": "file",
+      "file": ".armNonUvcWithPerm().md",
+      "x": 220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "type": "file",
+      "file": ".collectAllText()_1.md",
+      "x": 420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_findclickablebytext",
+      "type": "file",
+      "file": ".findClickableByText().md",
+      "x": 620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_finddevice",
+      "type": "file",
+      "file": ".findDevice().md",
+      "x": 820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_findnegativebutton",
+      "type": "file",
+      "file": ".findNegativeButton().md",
+      "x": 1020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_findnodebytext",
+      "type": "file",
+      "file": ".findNodeByText().md",
+      "x": 20,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_findpositivebutton",
+      "type": "file",
+      "file": ".findPositiveButton().md",
+      "x": 220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_handlecgsettingsscreen",
+      "type": "file",
+      "file": ".handleCgSettingsScreen().md",
+      "x": 420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_handlecgusbdialog",
+      "type": "file",
+      "file": ".handleCgUsbDialog().md",
+      "x": 620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_handledisplaymodechooser",
+      "type": "file",
+      "file": ".handleDisplayModeChooser().md",
+      "x": 820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_handlexrdroideskpermdialog",
+      "type": "file",
+      "file": ".handleXrdroideskPermDialog().md",
+      "x": 1020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_hasuvc",
+      "type": "file",
+      "file": ".hasUvc().md",
+      "x": 20,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_launchhidenable",
+      "type": "file",
+      "file": ".launchHidEnable().md",
+      "x": 220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_onaccessibilityevent",
+      "type": "file",
+      "file": ".onAccessibilityEvent()_1.md",
+      "x": 420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_oncameraopenfailednonuvc",
+      "type": "file",
+      "file": ".onCameraOpenFailedNonUvc().md",
+      "x": 620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_oncameraopened",
+      "type": "file",
+      "file": ".onCameraOpened().md",
+      "x": 820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "type": "file",
+      "file": ".onCreate().md",
+      "x": 1020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_ondeviceattached",
+      "type": "file",
+      "file": ".onDeviceAttached().md",
+      "x": 20,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_ondevicedetached",
+      "type": "file",
+      "file": ".onDeviceDetached().md",
+      "x": 220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_onusbpermissiondenied",
+      "type": "file",
+      "file": ".onUsbPermissionDenied()_1.md",
+      "x": 420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_release",
+      "type": "file",
+      "file": ".release().md",
+      "x": 620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_requestuvcperm",
+      "type": "file",
+      "file": ".requestUvcPerm().md",
+      "x": 820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_reset",
+      "type": "file",
+      "file": ".reset().md",
+      "x": 1020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_schedulecamerapermissionrequest",
+      "type": "file",
+      "file": ".scheduleCameraPermissionRequest().md",
+      "x": 20,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator_setuvcphaseactive",
+      "type": "file",
+      "file": ".setUvcPhaseActive().md",
+      "x": 220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_uilog",
+      "type": "file",
+      "file": ".uiLog().md",
+      "x": 420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_accessibilitynodeinfo",
+      "type": "file",
+      "file": "AccessibilityNodeInfo.md",
+      "x": 620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "type": "file",
+      "file": "GlassesUvcEnabler.md",
+      "x": 820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler",
+      "type": "file",
+      "file": "GlassesUvcEnabler.kt.md",
+      "x": 1020,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_intent",
+      "type": "file",
+      "file": "Intent.md",
+      "x": 20,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_string",
+      "type": "file",
+      "file": "String.md",
+      "x": 220,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_usbdevice",
+      "type": "file",
+      "file": "UsbDevice.md",
+      "x": 420,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator_usbsetupautomator",
+      "type": "file",
+      "file": "UsbSetupAutomator.md",
+      "x": 620,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_usbsetupautomator",
+      "type": "file",
+      "file": "UsbSetupAutomator.kt.md",
+      "x": 820,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "type": "file",
+      "file": "intentDevice().md",
+      "x": 1020,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "HID Frame Building & UVC Enable",
+      "x": 1400,
+      "y": 0,
+      "width": 1320,
+      "height": 720,
+      "color": "2"
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_buildget",
+      "type": "file",
+      "file": ".buildGet().md",
+      "x": 1420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "type": "file",
+      "file": ".buildHidFrame().md",
+      "x": 1620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_buildmessage",
+      "type": "file",
+      "file": ".buildMessage().md",
+      "x": 1820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_buildsetusbconfig",
+      "type": "file",
+      "file": ".buildSetUsbConfig().md",
+      "x": 2020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_close",
+      "type": "file",
+      "file": ".close().md",
+      "x": 2220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_configureandstart",
+      "type": "file",
+      "file": ".configureAndStart().md",
+      "x": 2420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_crc32",
+      "type": "file",
+      "file": ".crc32().md",
+      "x": 1420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "type": "file",
+      "file": ".crc32Hid().md",
+      "x": 1620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "type": "file",
+      "file": ".enableUvc().md",
+      "x": 1820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_isannexb",
+      "type": "file",
+      "file": ".isAnnexB().md",
+      "x": 2020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "type": "file",
+      "file": ".logHex().md",
+      "x": 2220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_glassesuvcenabler_glassesuvcenabler_openusbdevice",
+      "type": "file",
+      "file": ".openUsbDevice().md",
+      "x": 2420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_parseresponse",
+      "type": "file",
+      "file": ".parseResponse().md",
+      "x": 1420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol_parseusbconfig",
+      "type": "file",
+      "file": ".parseUsbConfig().md",
+      "x": 1620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_submit",
+      "type": "file",
+      "file": ".submit().md",
+      "x": 1820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "type": "file",
+      "file": ".submitToBuffer().md",
+      "x": 2020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontrol_uvcstreamcontrol_tobytes",
+      "type": "file",
+      "file": ".toBytes().md",
+      "x": 2220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder_warmup",
+      "type": "file",
+      "file": ".warmUp().md",
+      "x": 2420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_autocloseable",
+      "type": "file",
+      "file": "AutoCloseable.md",
+      "x": 1420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_byte",
+      "type": "file",
+      "file": "Byte.md",
+      "x": 1620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_bytearray",
+      "type": "file",
+      "file": "ByteArray.md",
+      "x": 1820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_h264framedecoder",
+      "type": "file",
+      "file": "H264FrameDecoder.md",
+      "x": 2020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder",
+      "type": "file",
+      "file": "H264FrameDecoder.kt.md",
+      "x": 2220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_int",
+      "type": "file",
+      "file": "Int.md",
+      "x": 2420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_mediacodec",
+      "type": "file",
+      "file": "MediaCodec.md",
+      "x": 1420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_pilotprotocol",
+      "type": "file",
+      "file": "PilotProtocol.md",
+      "x": 1620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol",
+      "type": "file",
+      "file": "PilotProtocol.kt.md",
+      "x": 1820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_short",
+      "type": "file",
+      "file": "Short.md",
+      "x": 2020,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_pilotprotocol_usbconfig",
+      "type": "file",
+      "file": "UsbConfig.md",
+      "x": 2220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontrol_uvcstreamcontrol",
+      "type": "file",
+      "file": "UvcStreamControl.md",
+      "x": 2420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontrol",
+      "type": "file",
+      "file": "UvcStreamControl.kt.md",
+      "x": 1420,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontrol_frombytes",
+      "type": "file",
+      "file": "fromBytes().md",
+      "x": 1620,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_h264framedecoder_toscaledbitmap",
+      "type": "file",
+      "file": "toScaledBitmap().md",
+      "x": 1820,
+      "y": 480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "Gesture Recognition & Config",
+      "x": 2800,
+      "y": 0,
+      "width": 1320,
+      "height": 620,
+      "color": "3"
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_pinch_takes_priority_over_simultaneous_swipe",
+      "type": "file",
+      "file": ".`Pinch takes priority over simultaneous swipe`().md",
+      "x": 2820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_custom_pinch_threshold_is_respected",
+      "type": "file",
+      "file": ".`custom pinch threshold is respected`().md",
+      "x": 3020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_custom_swipe_threshold_is_respected",
+      "type": "file",
+      "file": ".`custom swipe threshold is respected`().md",
+      "x": 3220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_resets_swipe_state_when_hand_becomes_untracked",
+      "type": "file",
+      "file": ".`resets swipe state when hand becomes untracked`().md",
+      "x": 3420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_resumes_swipe_detection_after_re_track",
+      "type": "file",
+      "file": ".`resumes swipe detection after re-track`().md",
+      "x": 3620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_pinch_when_pinchstrength_meets_threshold",
+      "type": "file",
+      "file": ".`returns Pinch when pinchStrength meets threshold`().md",
+      "x": 3820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_swipeleft_when_pointer_moves_left_beyond_threshold",
+      "type": "file",
+      "file": ".`returns SwipeLeft when pointer moves left beyond threshold`().md",
+      "x": 2820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_swiperight_when_pointer_moves_right_beyond_threshold",
+      "type": "file",
+      "file": ".`returns SwipeRight when pointer moves right beyond threshold`().md",
+      "x": 3020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_null_on_first_frame_no_previous_position_to_diff",
+      "type": "file",
+      "file": ".`returns null on first frame \u2014 no previous position to diff`().md",
+      "x": 3220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_null_when_hand_is_not_tracked",
+      "type": "file",
+      "file": ".`returns null when hand is not tracked`().md",
+      "x": 3420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_null_when_pinchstrength_is_below_threshold",
+      "type": "file",
+      "file": ".`returns null when pinchStrength is below threshold`().md",
+      "x": 3620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_returns_null_when_pointer_movement_is_below_swipe_threshold",
+      "type": "file",
+      "file": ".`returns null when pointer movement is below swipe threshold`().md",
+      "x": 3820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizer_gesturerecognizer_detectswipe",
+      "type": "file",
+      "file": ".detectSwipe().md",
+      "x": 2820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipeline_handtrackingpipeline_onhanddata",
+      "type": "file",
+      "file": ".onHandData().md",
+      "x": 3020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizer_gesturerecognizer_recognize",
+      "type": "file",
+      "file": ".recognize().md",
+      "x": 3220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_setup",
+      "type": "file",
+      "file": ".setUp()_3.md",
+      "x": 3420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_tracked",
+      "type": "file",
+      "file": ".tracked().md",
+      "x": 3620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatcher_gestureactiondispatcher_triggerclick",
+      "type": "file",
+      "file": ".triggerClick().md",
+      "x": 3820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_triggerdebugclick",
+      "type": "file",
+      "file": ".triggerDebugClick().md",
+      "x": 2820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest_untracked",
+      "type": "file",
+      "file": ".untracked().md",
+      "x": 3020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_float",
+      "type": "file",
+      "file": "Float.md",
+      "x": 3220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gestureconfig_gestureconfig",
+      "type": "file",
+      "file": "GestureConfig.md",
+      "x": 3420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gestureconfig",
+      "type": "file",
+      "file": "GestureConfig.kt.md",
+      "x": 3620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizer_gesturerecognizer",
+      "type": "file",
+      "file": "GestureRecognizer.md",
+      "x": 3820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizer",
+      "type": "file",
+      "file": "GestureRecognizer.kt.md",
+      "x": 2820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest_gesturerecognizertest",
+      "type": "file",
+      "file": "GestureRecognizerTest.md",
+      "x": 3020,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesturerecognizertest",
+      "type": "file",
+      "file": "GestureRecognizerTest.kt.md",
+      "x": 3220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_handdata_handdata",
+      "type": "file",
+      "file": "HandData.md",
+      "x": 3420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_handdata",
+      "type": "file",
+      "file": "HandData.kt.md",
+      "x": 3620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "Hand Tracking Pipeline",
+      "x": 4200,
+      "y": 0,
+      "width": 1320,
+      "height": 620,
+      "color": "4"
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest_onhanddata_does_not_dispatch_when_recognizer_returns_null",
+      "type": "file",
+      "file": ".`onHandData does not dispatch when recognizer returns null`().md",
+      "x": 4220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest_onhanddata_feeds_handdata_into_recognizer_and_dispatches_non_null_gesture",
+      "type": "file",
+      "file": ".`onHandData feeds HandData into recognizer and dispatches non-null gesture`().md",
+      "x": 4420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest_stop_closes_the_camera",
+      "type": "file",
+      "file": ".`stop closes the camera`().md",
+      "x": 4620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "type": "file",
+      "file": ".collectAllText().md",
+      "x": 4820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_launchonglassesdisplay",
+      "type": "file",
+      "file": ".launchOnGlassesDisplay().md",
+      "x": 5020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_logflowstate",
+      "type": "file",
+      "file": ".logFlowState().md",
+      "x": 5220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onaccessibilityevent",
+      "type": "file",
+      "file": ".onAccessibilityEvent().md",
+      "x": 4220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_oninterrupt",
+      "type": "file",
+      "file": ".onInterrupt().md",
+      "x": 4420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onserviceconnected",
+      "type": "file",
+      "file": ".onServiceConnected().md",
+      "x": 4620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onunbind",
+      "type": "file",
+      "file": ".onUnbind().md",
+      "x": 4820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onusbpermissiondenied",
+      "type": "file",
+      "file": ".onUsbPermissionDenied().md",
+      "x": 5020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_opencamera",
+      "type": "file",
+      "file": ".openCamera().md",
+      "x": 5220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest_setup",
+      "type": "file",
+      "file": ".setUp().md",
+      "x": 4220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_starthandtracking",
+      "type": "file",
+      "file": ".startHandTracking().md",
+      "x": 4420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_startstatelogger",
+      "type": "file",
+      "file": ".startStateLogger().md",
+      "x": 4620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipeline_handtrackingpipeline_stop",
+      "type": "file",
+      "file": ".stop().md",
+      "x": 4820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_stophandtracking",
+      "type": "file",
+      "file": ".stopHandTracking().md",
+      "x": 5020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_stopstatelogger",
+      "type": "file",
+      "file": ".stopStateLogger().md",
+      "x": 5220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_tryconnectcamera",
+      "type": "file",
+      "file": ".tryConnectCamera().md",
+      "x": 4220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_accessibilityevent",
+      "type": "file",
+      "file": "AccessibilityEvent.md",
+      "x": 4420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_accessibilityservice",
+      "type": "file",
+      "file": "AccessibilityService.md",
+      "x": 4620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice_gestureaccessibilityservice",
+      "type": "file",
+      "file": "GestureAccessibilityService.md",
+      "x": 4820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_service_gestureaccessibilityservice",
+      "type": "file",
+      "file": "GestureAccessibilityService.kt.md",
+      "x": 5020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "type": "file",
+      "file": "HandTrackingPipeline.md",
+      "x": 5220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipeline",
+      "type": "file",
+      "file": "HandTrackingPipeline.kt.md",
+      "x": 4220,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest",
+      "type": "file",
+      "file": "HandTrackingPipelineTest.md",
+      "x": 4420,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handtrackingpipelinetest",
+      "type": "file",
+      "file": "HandTrackingPipelineTest.kt.md",
+      "x": 4620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_job",
+      "type": "file",
+      "file": "Job.md",
+      "x": 4820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "Android UI Components",
+      "x": 5600,
+      "y": 0,
+      "width": 1100,
+      "height": 620,
+      "color": "5"
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "type": "file",
+      "file": ".appendLog().md",
+      "x": 5620,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "type": "file",
+      "file": ".handleUsbAttached().md",
+      "x": 5820,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "type": "file",
+      "file": ".logRequirementsState().md",
+      "x": 6020,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "type": "file",
+      "file": ".onCreate()_1.md",
+      "x": 6220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_ondestroy",
+      "type": "file",
+      "file": ".onDestroy()_1.md",
+      "x": 6420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_onnewintent",
+      "type": "file",
+      "file": ".onNewIntent().md",
+      "x": 5620,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "type": "file",
+      "file": ".onRequestPermissionsResult().md",
+      "x": 5820,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_onresume",
+      "type": "file",
+      "file": ".onResume().md",
+      "x": 6020,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_onstart",
+      "type": "file",
+      "file": ".onStart().md",
+      "x": 6220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_onstop",
+      "type": "file",
+      "file": ".onStop().md",
+      "x": 6420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity_yn",
+      "type": "file",
+      "file": ".yn().md",
+      "x": 5620,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_appcompatactivity",
+      "type": "file",
+      "file": "AppCompatActivity.md",
+      "x": 5820,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_array",
+      "type": "file",
+      "file": "Array.md",
+      "x": 6020,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_bundle",
+      "type": "file",
+      "file": "Bundle.md",
+      "x": 6220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_button",
+      "type": "file",
+      "file": "Button.md",
+      "x": 6420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_intarray",
+      "type": "file",
+      "file": "IntArray.md",
+      "x": 5620,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_mainactivity",
+      "type": "file",
+      "file": "MainActivity.md",
+      "x": 5820,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity",
+      "type": "file",
+      "file": "MainActivity.kt.md",
+      "x": 6020,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_scrollview",
+      "type": "file",
+      "file": "ScrollView.md",
+      "x": 6220,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_textview",
+      "type": "file",
+      "file": "TextView.md",
+      "x": 6420,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_android",
+      "type": "file",
+      "file": "android.md",
+      "x": 5620,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_mainactivity_finishall",
+      "type": "file",
+      "file": "finishAll().md",
+      "x": 5820,
+      "y": 400,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "UVC Camera & TCP Pilot",
+      "x": 6780,
+      "y": 0,
+      "width": 1100,
+      "height": 520,
+      "color": "6"
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_buildhosttypeframe",
+      "type": "file",
+      "file": ".buildHostTypeFrame().md",
+      "x": 6800,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_close",
+      "type": "file",
+      "file": ".close()_2.md",
+      "x": 7000,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_connecttcppilot",
+      "type": "file",
+      "file": ".connectTcpPilot().md",
+      "x": 7200,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_findbulkinendpoint",
+      "type": "file",
+      "file": ".findBulkInEndpoint().md",
+      "x": 7400,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_findstreaminginterface",
+      "type": "file",
+      "file": ".findStreamingInterface().md",
+      "x": 7600,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_haspermission",
+      "type": "file",
+      "file": ".hasPermission().md",
+      "x": 6800,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "type": "file",
+      "file": ".negotiateFormat().md",
+      "x": 7000,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_open",
+      "type": "file",
+      "file": ".open().md",
+      "x": 7200,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_starthosttypekeepalive",
+      "type": "file",
+      "file": ".startHostTypeKeepalive().md",
+      "x": 7400,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_startreading",
+      "type": "file",
+      "file": ".startReading().md",
+      "x": 7600,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera_starttcphosttypekeepalive",
+      "type": "file",
+      "file": ".startTcpHostTypeKeepalive().md",
+      "x": 6800,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_boolean",
+      "type": "file",
+      "file": "Boolean.md",
+      "x": 7000,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_connectivitymanager",
+      "type": "file",
+      "file": "ConnectivityManager.md",
+      "x": 7200,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_socket",
+      "type": "file",
+      "file": "Socket.md",
+      "x": 7400,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_usbdeviceconnection",
+      "type": "file",
+      "file": "UsbDeviceConnection.md",
+      "x": 7600,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_usbendpoint",
+      "type": "file",
+      "file": "UsbEndpoint.md",
+      "x": 6800,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_usbinterface",
+      "type": "file",
+      "file": "UsbInterface.md",
+      "x": 7000,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera_xrealglassescamera",
+      "type": "file",
+      "file": "XRealGlassesCamera.md",
+      "x": 7200,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescamera",
+      "type": "file",
+      "file": "XRealGlassesCamera.kt.md",
+      "x": 7400,
+      "y": 320,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "Desktop Input Injection",
+      "x": 0,
+      "y": 800,
+      "width": 1100,
+      "height": 520,
+      "color": "1"
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_dispatchclick",
+      "type": "file",
+      "file": ".dispatchClick().md",
+      "x": 20,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_displaymetrics",
+      "type": "file",
+      "file": ".displayMetrics().md",
+      "x": 220,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_logdisplaysonce",
+      "type": "file",
+      "file": ".logDisplaysOnce().md",
+      "x": 420,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_normalizedtopixels",
+      "type": "file",
+      "file": ".normalizedToPixels().md",
+      "x": 620,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_perform",
+      "type": "file",
+      "file": ".perform().md",
+      "x": 820,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopcontroller_desktopcontroller_perform",
+      "type": "file",
+      "file": ".perform()_1.md",
+      "x": 20,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_targetdisplay",
+      "type": "file",
+      "file": ".targetDisplay().md",
+      "x": 220,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller",
+      "type": "file",
+      "file": "AccessibilityDesktopController.md",
+      "x": 420,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_accessibilitydesktopcontroller",
+      "type": "file",
+      "file": "AccessibilityDesktopController.kt.md",
+      "x": 620,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopaction_click",
+      "type": "file",
+      "file": "Click.md",
+      "x": 820,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopaction_desktopaction",
+      "type": "file",
+      "file": "DesktopAction.md",
+      "x": 20,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopaction",
+      "type": "file",
+      "file": "DesktopAction.kt.md",
+      "x": 220,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopcontroller_desktopcontroller",
+      "type": "file",
+      "file": "DesktopController.md",
+      "x": 420,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopcontroller",
+      "type": "file",
+      "file": "DesktopController.kt.md",
+      "x": 620,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_display",
+      "type": "file",
+      "file": "Display.md",
+      "x": 820,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_displaymetrics",
+      "type": "file",
+      "file": "DisplayMetrics.md",
+      "x": 20,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_pair",
+      "type": "file",
+      "file": "Pair.md",
+      "x": 220,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopaction_swipe",
+      "type": "file",
+      "file": "Swipe.md",
+      "x": 420,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopaction_swipedirection",
+      "type": "file",
+      "file": "SwipeDirection.md",
+      "x": 620,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g7",
+      "type": "group",
+      "label": "HID RE Findings & Docs",
+      "x": 1400,
+      "y": 800,
+      "width": 1100,
+      "height": 520,
+      "color": "2"
+    },
+    {
+      "id": "n_claude_md_autonomous_uvc_flow",
+      "type": "file",
+      "file": "Autonomous UVC enablement flow \u2014 fast path (hasPermission=true) and slow path (first plug).md",
+      "x": 1420,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_control_glasses_app",
+      "type": "file",
+      "file": "Control Glasses app (com.xreal.glassescontrol.store) \u2014 enables UVC mode via HID, preferred USB handler.md",
+      "x": 1620,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_readme_frida_re_scripts",
+      "type": "file",
+      "file": "Frida RE scripts \u2014 hooks CG (com.xreal.glassescontrol.store) USB traffic to capture full HID init sequence.md",
+      "x": 1820,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_glassesuvcenabler",
+      "type": "file",
+      "file": "GlassesUvcEnabler \u2014 sends HID USB commands to glasses MCU to enable UVC mode autonomously.md",
+      "x": 2020,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_pixel_10_pro",
+      "type": "file",
+      "file": "Google Pixel 10 Pro (target phone \u2014 Android Desktop mode host).md",
+      "x": 2220,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_hid_frame_format",
+      "type": "file",
+      "file": "HID frame format \u2014 Report ID 0xfd, CRC32, innerLen, msgId (RE'd from cmd_build_sdk 0xa9ec4).md",
+      "x": 1420,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_readme_unknowns",
+      "type": "file",
+      "file": "Key unknowns for full CG removal \u2014 messages before HOST_TYPE, between SDK_VERSION and GET, post re-enum CG behavior.md",
+      "x": 1620,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_readme_known_msgids",
+      "type": "file",
+      "file": "Known msgIds table \u2014 HEARTBEAT(0x01), PING_26(0x26), SDK_VERSION(0x31), HOST_TYPE(0x60), GET_USB_CONFIG(0xD2), SET_USB_CONFIG(0xD3).md",
+      "x": 1820,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_native_kotlin_rationale",
+      "type": "file",
+      "file": "Rationale Native Kotlin over Unity \u2014 AccessibilityService must run as persistent background service; Unity controls process lifecycle making this very difficult.md",
+      "x": 2020,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_set_payload_0x140",
+      "type": "file",
+      "file": "SET payload 0x140 (uvc0=1 + enable=1) \u2014 LE bytes 40 01 00 00 \u2014 confirmed by Frida.md",
+      "x": 2220,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_tcp_pilot_path",
+      "type": "file",
+      "file": "TCP pilot path \u2014 169.254.1.150180 via USB NCM, secondary fallback for HID config.md",
+      "x": 1420,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_tdd_approach",
+      "type": "file",
+      "file": "TDD approach \u2014 JUnit45+Mockk for unit, EspressoUIAutomator for instrumented; no PR without tests.md",
+      "x": 1620,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_readme_usbconfiglist_bitmask",
+      "type": "file",
+      "file": "UsbConfigList bitmask \u2014 bit layout ncm(0)..uvc0(6)..uvc1(7)..enable(8), CG OR's 0x140 with current config.md",
+      "x": 1820,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_usbconfiglist",
+      "type": "file",
+      "file": "UsbConfigList \u2014 9-field bitmask (ncmecmuachid_ctrlmtpmass_storageuvc0uvc1enable) 4-byte LE.md",
+      "x": 2020,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_xreal_one_pro",
+      "type": "file",
+      "file": "XReal One Pro glasses (primary hardware \u2014 USB-C UVC camera source).md",
+      "x": 2220,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_readme_hook_cg_hid_js",
+      "type": "file",
+      "file": "hook_cg_hid.js \u2014 Frida script hooking bulkTransfer, controlTransfer, openDevice, requestPermission in CG.md",
+      "x": 1420,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_libnr_glasses_api",
+      "type": "file",
+      "file": "libnr_glasses_api.so \u2014 native library from Control Glasses APK, RE source for HID protocol.md",
+      "x": 1620,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_xrdroiddesk_app",
+      "type": "file",
+      "file": "xrdroiddesk \u2014 Android app using XReal One Pro hand gestures to control Android Desktop.md",
+      "x": 1820,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g8",
+      "type": "group",
+      "label": "Architecture & Gesture Docs",
+      "x": 2800,
+      "y": 800,
+      "width": 1100,
+      "height": 520,
+      "color": "3"
+    },
+    {
+      "id": "n_claude_md_accessibilitydesktopcontroller",
+      "type": "file",
+      "file": "AccessibilityDesktopController \u2014 Android AccessibilityService input injection.md",
+      "x": 2820,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_gesture_desktop_mapping",
+      "type": "file",
+      "file": "Gesture to Desktop Action mapping \u2014 Pinch=click, OpenPalm=right-click, Swipe=window switch, PinchOut=zoom, Fist=drag.md",
+      "x": 3020,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_gestureaccessibilityservice",
+      "type": "file",
+      "file": "GestureAccessibilityService \u2014 dispatchGesture() entry point for desktop control.md",
+      "x": 3220,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_gestureactiondispatcher",
+      "type": "file",
+      "file": "GestureActionDispatcher \u2014 maps named gestures to DesktopAction (Click, etc.).md",
+      "x": 3420,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_gesturerecognizer",
+      "type": "file",
+      "file": "GestureRecognizer \u2014 converts HandData into named gestures (Pinch, SwipeLeft, SwipeRight).md",
+      "x": 3620,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_hand_data",
+      "type": "file",
+      "file": "HandData \u2014 isTracked, pinchStrength, pointerPose \u2014 data struct between landmarker and gesture layer.md",
+      "x": 2820,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_handlandmarkerhelper",
+      "type": "file",
+      "file": "HandLandmarkerHelper \u2014 MediaPipe 21-joint hand landmarker wrapper.md",
+      "x": 3020,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_handtrackingpipeline",
+      "type": "file",
+      "file": "HandTrackingPipeline \u2014 orchestrates XRealGlassesCamera + HandLandmarkerHelper.md",
+      "x": 3220,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_kmp_shared_module",
+      "type": "file",
+      "file": "KMP shared module \u2014 GestureRecognizer + GestureActionDispatcher shared across Android and macOS.md",
+      "x": 3420,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_mrtk3",
+      "type": "file",
+      "file": "MRTK3 (Microsoft Mixed Reality Toolkit) \u2014 higher-level XR interaction framework.md",
+      "x": 3620,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_mediapipe_tasks_vision",
+      "type": "file",
+      "file": "MediaPipe Tasks Vision (com.google.mediapipetasks-vision) \u2014 on-device hand landmarking.md",
+      "x": 2820,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_openxr_hand_tracking",
+      "type": "file",
+      "file": "OpenXR XR_EXT_hand_tracking \u2014 Khronos standard 26-joint hand tracking extension.md",
+      "x": 3020,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_phone_screen_off_feature",
+      "type": "file",
+      "file": "Phone screen off with glasses desktop active \u2014 WakeLockPowerManager investigation.md",
+      "x": 3220,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_uvc_camera_access",
+      "type": "file",
+      "file": "UVC camera access via Android USB Host API \u2014 VID=0x3318 PID=0x0436, bulkTransfer MJPEG frames.md",
+      "x": 3420,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_unity_xr_hands",
+      "type": "file",
+      "file": "Unity XR Hands package (com.unity.xr.hands \u22651.6) \u2014 cross-platform hand tracking subsystem.md",
+      "x": 3620,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_xrealglassescamera",
+      "type": "file",
+      "file": "XRealGlassesCamera \u2014 Android USB Host API UVC camera implementation.md",
+      "x": 2820,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_macos_companion_app",
+      "type": "file",
+      "file": "macOS companion app (stretch) \u2014 Swift + CGEventAXUIElement desktop control via KMP interop.md",
+      "x": 3020,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g9",
+      "type": "group",
+      "label": "MediaPipe Landmark Conversion",
+      "x": 4200,
+      "y": 800,
+      "width": 880,
+      "height": 520,
+      "color": "4"
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_pinchstrength_decreases_as_fingers_separate",
+      "type": "file",
+      "file": ".`pinchStrength decreases as fingers separate`().md",
+      "x": 4220,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_pointer_pose_uses_image_x_and_y_of_index_mcp",
+      "type": "file",
+      "file": ".`pointer pose uses image X and Y of index MCP`().md",
+      "x": 4420,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_at_same_world_position_gives_pinchstrength_1",
+      "type": "file",
+      "file": ".`thumb and index at same world position gives pinchStrength 1`().md",
+      "x": 4620,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_far_apart_gives_pinchstrength_0",
+      "type": "file",
+      "file": ".`thumb and index far apart gives pinchStrength 0`().md",
+      "x": 4820,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_untracked_input_yields_untracked_handdata",
+      "type": "file",
+      "file": ".`untracked input yields untracked HandData`().md",
+      "x": 4220,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "type": "file",
+      "file": ".landmarks().md",
+      "x": 4420,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddata_landmarkindex",
+      "type": "file",
+      "file": "LandmarkIndex.md",
+      "x": 4620,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddata",
+      "type": "file",
+      "file": "LandmarkToHandData.kt.md",
+      "x": 4820,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest_landmarktohanddatatest",
+      "type": "file",
+      "file": "LandmarkToHandDataTest.md",
+      "x": 4220,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddatatest",
+      "type": "file",
+      "file": "LandmarkToHandDataTest.kt.md",
+      "x": 4420,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_list",
+      "type": "file",
+      "file": "List.md",
+      "x": 4620,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_pose_pose",
+      "type": "file",
+      "file": "Pose.md",
+      "x": 4820,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_pose",
+      "type": "file",
+      "file": "Pose.kt.md",
+      "x": 4220,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_triple",
+      "type": "file",
+      "file": "Triple.md",
+      "x": 4420,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_landmarktohanddata_landmarktohanddata",
+      "type": "file",
+      "file": "landmarkToHandData().md",
+      "x": 4620,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_tohanddata",
+      "type": "file",
+      "file": "toHandData().md",
+      "x": 4820,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g10",
+      "type": "group",
+      "label": "Gesture Action Dispatcher",
+      "x": 5600,
+      "y": 800,
+      "width": 880,
+      "height": 520,
+      "color": "5"
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_dispatch_pinch_applies_coord_mapping_and_performs_click",
+      "type": "file",
+      "file": ".`dispatch Pinch applies coord mapping and performs Click`().md",
+      "x": 5620,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_dispatch_swipeleft_performs_swipe_left_action",
+      "type": "file",
+      "file": ".`dispatch SwipeLeft performs Swipe Left action`().md",
+      "x": 5820,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_dispatch_swiperight_performs_swipe_right_action",
+      "type": "file",
+      "file": ".`dispatch SwipeRight performs Swipe Right action`().md",
+      "x": 6020,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_triggerclick_dispatches_click_action_with_given_coordinates",
+      "type": "file",
+      "file": ".`triggerClick dispatches Click action with given coordinates`().md",
+      "x": 6220,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_triggerclick_passes_coordinates_through_unchanged",
+      "type": "file",
+      "file": ".`triggerClick passes coordinates through unchanged`().md",
+      "x": 5620,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatcher_gestureactiondispatcher_dispatch",
+      "type": "file",
+      "file": ".dispatch().md",
+      "x": 5820,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest_setup",
+      "type": "file",
+      "file": ".setUp()_2.md",
+      "x": 6020,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesture_gesture",
+      "type": "file",
+      "file": "Gesture.md",
+      "x": 6220,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesture",
+      "type": "file",
+      "file": "Gesture.kt.md",
+      "x": 5620,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatcher_gestureactiondispatcher",
+      "type": "file",
+      "file": "GestureActionDispatcher.md",
+      "x": 5820,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatcher",
+      "type": "file",
+      "file": "GestureActionDispatcher.kt.md",
+      "x": 6020,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest_gestureactiondispatchertest",
+      "type": "file",
+      "file": "GestureActionDispatcherTest.md",
+      "x": 6220,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_gestureactiondispatchertest",
+      "type": "file",
+      "file": "GestureActionDispatcherTest.kt.md",
+      "x": 5620,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesture_pinch",
+      "type": "file",
+      "file": "Pinch.md",
+      "x": 5820,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesture_swipeleft",
+      "type": "file",
+      "file": "SwipeLeft.md",
+      "x": 6020,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_gesture_gesture_swiperight",
+      "type": "file",
+      "file": "SwipeRight.md",
+      "x": 6220,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g11",
+      "type": "group",
+      "label": "Camera Device Tests",
+      "x": 6780,
+      "y": 800,
+      "width": 880,
+      "height": 520,
+      "color": "6"
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_finddevice_ignores_devices_with_correct_pid_but_wrong_vid",
+      "type": "file",
+      "file": ".`findDevice ignores devices with correct PID but wrong VID`().md",
+      "x": 6800,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_finddevice_ignores_devices_with_correct_vid_but_wrong_pid",
+      "type": "file",
+      "file": ".`findDevice ignores devices with correct VID but wrong PID`().md",
+      "x": 7000,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_finddevice_returns_device_matching_xreal_vid_and_pid",
+      "type": "file",
+      "file": ".`findDevice returns device matching XReal VID and PID`().md",
+      "x": 7200,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_finddevice_returns_null_when_device_list_is_empty",
+      "type": "file",
+      "file": ".`findDevice returns null when device list is empty`().md",
+      "x": 7400,
+      "y": 880,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_finddevice_returns_null_when_no_device_matches_vid_and_pid",
+      "type": "file",
+      "file": ".`findDevice returns null when no device matches VID and PID`().md",
+      "x": 6800,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_mockusbdevice",
+      "type": "file",
+      "file": ".mockUsbDevice().md",
+      "x": 7000,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_ondestroy",
+      "type": "file",
+      "file": ".onDestroy().md",
+      "x": 7200,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest_setup",
+      "type": "file",
+      "file": ".setUp()_1.md",
+      "x": 7400,
+      "y": 960,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_activity",
+      "type": "file",
+      "file": "Activity.md",
+      "x": 6800,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "type": "file",
+      "file": "GrantUsbPermissionActivity.md",
+      "x": 7000,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xrdroiddesk_grantusbpermissionactivity",
+      "type": "file",
+      "file": "GrantUsbPermissionActivity.kt.md",
+      "x": 7200,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_usbmanager",
+      "type": "file",
+      "file": "UsbManager.md",
+      "x": 7400,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest_xrealglassescameratest",
+      "type": "file",
+      "file": "XRealGlassesCameraTest.md",
+      "x": 6800,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_xrealglassescameratest",
+      "type": "file",
+      "file": "XRealGlassesCameraTest.kt.md",
+      "x": 7000,
+      "y": 1120,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g12",
+      "type": "group",
+      "label": "Hand Landmarker Helper",
+      "x": 0,
+      "y": 1400,
+      "width": 660,
+      "height": 420,
+      "color": "1"
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_handlandmarkerhelper_close",
+      "type": "file",
+      "file": ".close()_1.md",
+      "x": 20,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "type": "file",
+      "file": ".maybeSaveFrame().md",
+      "x": 220,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "type": "file",
+      "file": ".processFrame().md",
+      "x": 420,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_handlandmarkerhelper_rotatebitmap",
+      "type": "file",
+      "file": ".rotateBitmap().md",
+      "x": 20,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_bitmap",
+      "type": "file",
+      "file": "Bitmap.md",
+      "x": 220,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_handlandmarker",
+      "type": "file",
+      "file": "HandLandmarker.md",
+      "x": 420,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "type": "file",
+      "file": "HandLandmarkerHelper.md",
+      "x": 20,
+      "y": 1640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_handlandmarkerhelper",
+      "type": "file",
+      "file": "HandLandmarkerHelper.kt.md",
+      "x": 220,
+      "y": 1640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_long",
+      "type": "file",
+      "file": "Long.md",
+      "x": 420,
+      "y": 1640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g13",
+      "type": "group",
+      "label": "UVC Stream Control Tests",
+      "x": 1400,
+      "y": 1400,
+      "width": 660,
+      "height": 420,
+      "color": "2"
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest_default_serializes_to_34_bytes",
+      "type": "file",
+      "file": ".`DEFAULT serializes to 34 bytes`().md",
+      "x": 1420,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest_bmhint_is_written_as_0x0001_little_endian_at_offset_0",
+      "type": "file",
+      "file": ".`bmHint is written as 0x0001 little-endian at offset 0`().md",
+      "x": 1620,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest_frameinterval_is_written_at_byte_offset_4_as_little_endian_uint32",
+      "type": "file",
+      "file": ".`frameInterval is written at byte offset 4 as little-endian uint32`().md",
+      "x": 1820,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest_frombytes_round_trips_formatindex_and_frameindex",
+      "type": "file",
+      "file": ".`fromBytes round-trips formatIndex and frameIndex`().md",
+      "x": 1420,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest_frombytes_round_trips_frameinterval",
+      "type": "file",
+      "file": ".`fromBytes round-trips frameInterval`().md",
+      "x": 1620,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest_uvcstreamcontroltest",
+      "type": "file",
+      "file": "UvcStreamControlTest.md",
+      "x": 1820,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_camera_uvcstreamcontroltest",
+      "type": "file",
+      "file": "UvcStreamControlTest.kt.md",
+      "x": 1420,
+      "y": 1640,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g14",
+      "type": "group",
+      "label": "Frida HID Hook",
+      "x": 2800,
+      "y": 1400,
+      "width": 660,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_frida_hook_cg_hid",
+      "type": "file",
+      "file": "hook_cg_hid.js.md",
+      "x": 2820,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_hook_cg_hid_msgidname",
+      "type": "file",
+      "file": "msgIdName().md",
+      "x": 3020,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_hook_cg_hid_parsehidframe",
+      "type": "file",
+      "file": "parseHidFrame().md",
+      "x": 3220,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_hook_cg_hid_tohex",
+      "type": "file",
+      "file": "toHex().md",
+      "x": 2820,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_frida_hook_cg_hid_ts",
+      "type": "file",
+      "file": "ts().md",
+      "x": 3020,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g15",
+      "type": "group",
+      "label": "USB Permission Activities",
+      "x": 4200,
+      "y": 1400,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_claude_md_android16_camera_permission",
+      "type": "file",
+      "file": "Android 16 CAMERA permission requirement for UVC devices \u2014 UsbUserPermissionManager blocks without it.md",
+      "x": 4220,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_grantusbpermissionactivity",
+      "type": "file",
+      "file": "GrantUsbPermissionActivity \u2014 explicit requestPermission() for UVC device USB access.md",
+      "x": 4420,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_mainactivity",
+      "type": "file",
+      "file": "MainActivity \u2014 requirements state logger, CAMERA permission request, USB permission dialog.md",
+      "x": 4220,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_local_properties",
+      "type": "file",
+      "file": "local.properties \u2014 environment-specific config (SDK keys, feature flags) via BuildConfig at build time.md",
+      "x": 4420,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g16",
+      "type": "group",
+      "label": "Desktop Action Tests",
+      "x": 5600,
+      "y": 1400,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_controller_desktopactiontest_desktopactiontest_click_equality_is_coordinate_based",
+      "type": "file",
+      "file": ".`Click equality is coordinate-based`().md",
+      "x": 5620,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopactiontest_desktopactiontest_click_holds_the_given_coordinates",
+      "type": "file",
+      "file": ".`Click holds the given coordinates`().md",
+      "x": 5820,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopactiontest_desktopactiontest",
+      "type": "file",
+      "file": "DesktopActionTest.md",
+      "x": 5620,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_controller_desktopactiontest",
+      "type": "file",
+      "file": "DesktopActionTest.kt.md",
+      "x": 5820,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g17",
+      "type": "group",
+      "label": "UVC Frame Images",
+      "x": 6780,
+      "y": 1400,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_images_xr_frame_mjpeg_corruption",
+      "type": "file",
+      "file": "MJPEG Decoding Corruption Artifact.md",
+      "x": 6800,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_images_xr_frame_uvc_bulk_transfer",
+      "type": "file",
+      "file": "UVC Bulk Transfer Pipeline.md",
+      "x": 7000,
+      "y": 1480,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_images_xr_frame_vehicle_interior",
+      "type": "file",
+      "file": "Vehicle Interior Scene (camera field of view).md",
+      "x": 6800,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_images_xr_frame_uvc_camera_frame",
+      "type": "file",
+      "file": "XReal One Pro UVC Camera Frame (xr_frame.jpg).md",
+      "x": 7000,
+      "y": 1560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g18",
+      "type": "group",
+      "label": "Dev Tooling & Config",
+      "x": 0,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_frida_readme_capture_workflow",
+      "type": "file",
+      "file": "Frida capture workflow \u2014 make frida-hook-cg, plug glasses, observe HID sequence in log.md",
+      "x": 20,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_claude_md_makefile_commands",
+      "type": "file",
+      "file": "Makefile \u2014 wraps common dev tasks (build, install, run, logcat, emulator, adb-wifi, etc.) with JAVA_HOME.md",
+      "x": 220,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_pre_commit_config_ktlint_hook",
+      "type": "file",
+      "file": "ktlint pre-commit hook (Gradle ktlintCheck on staged .kt files).md",
+      "x": 20,
+      "y": 2060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g19",
+      "type": "group",
+      "label": "App Build Config",
+      "x": 1400,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_app_build_gradle",
+      "type": "file",
+      "file": "build.gradle.kts.md",
+      "x": 1420,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g20",
+      "type": "group",
+      "label": "Root Build Config",
+      "x": 2800,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_build_gradle",
+      "type": "file",
+      "file": "build.gradle.kts_1.md",
+      "x": 2820,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g21",
+      "type": "group",
+      "label": "Desktop AVD Setup",
+      "x": 4200,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_claude_md_avd_xrdroiddesk",
+      "type": "file",
+      "file": "AVD xrdroiddesk_desktop_api34 \u2014 android-34 android-desktop arm64 Desktop mode emulator.md",
+      "x": 4220,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g22",
+      "type": "group",
+      "label": "Frame Image 1436-A",
+      "x": 5600,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1436_frame",
+      "type": "file",
+      "file": "XReal UVC Camera Frame (2026-06-20 1436).md",
+      "x": 5620,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g23",
+      "type": "group",
+      "label": "Frame Image 1436-B",
+      "x": 6780,
+      "y": 1900,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1436_glitch_artifact",
+      "type": "file",
+      "file": "Horizontal Banding  Decode Artifact.md",
+      "x": 6800,
+      "y": 1980,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g24",
+      "type": "group",
+      "label": "Frame Image 1436-C",
+      "x": 0,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1436_real_scene",
+      "type": "file",
+      "file": "Real-World Scene (Car Interior  Windshield View).md",
+      "x": 20,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g25",
+      "type": "group",
+      "label": "Frame Image 1436-D",
+      "x": 1400,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1436_uvc_capture",
+      "type": "file",
+      "file": "UVC Frame Capture Test.md",
+      "x": 1420,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g26",
+      "type": "group",
+      "label": "Frame Image 1447-A",
+      "x": 2800,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1447_camera_frame",
+      "type": "file",
+      "file": "XReal One Pro UVC Camera Frame (2026-06-20 1447).md",
+      "x": 2820,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g27",
+      "type": "group",
+      "label": "Frame Image 1447-B",
+      "x": 4200,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1447_image_artifact",
+      "type": "file",
+      "file": "Frame Overexposure  Image Artifact.md",
+      "x": 4220,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g28",
+      "type": "group",
+      "label": "Frame Image 1447-C",
+      "x": 5600,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1447_scene_content",
+      "type": "file",
+      "file": "Vehicle Interior  Dashboard Scene.md",
+      "x": 5620,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g29",
+      "type": "group",
+      "label": "Frame Image 1447-D",
+      "x": 6780,
+      "y": 2380,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1447_uvc_stream",
+      "type": "file",
+      "file": "UVC Camera Stream Output.md",
+      "x": 6800,
+      "y": 2460,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g30",
+      "type": "group",
+      "label": "Frame Image 1457-A",
+      "x": 0,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1457_frame_corruption",
+      "type": "file",
+      "file": "Partial frame corruption \u2014 bottom half washed outnoisy (truncated MJPEG artifact).md",
+      "x": 20,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g31",
+      "type": "group",
+      "label": "Frame Image 1457-B",
+      "x": 1400,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1457_road_scene",
+      "type": "file",
+      "file": "Road scene \u2014 rural highway viewed from vehicle interior.md",
+      "x": 1420,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g32",
+      "type": "group",
+      "label": "Frame Image 1457-C",
+      "x": 2800,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_images_xr_frame_20260620_1457_uvc_capture",
+      "type": "file",
+      "file": "XReal UVC Camera Frame (2026-06-20 1457).md",
+      "x": 2820,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g33",
+      "type": "group",
+      "label": "Pre-commit Hook Config",
+      "x": 4200,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_pre_commit_config_pre_commit_hooks",
+      "type": "file",
+      "file": "pre-commit hygiene hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-merge-conflict, check-added-large-files).md",
+      "x": 4220,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g34",
+      "type": "group",
+      "label": "Gradle Settings",
+      "x": 5600,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_settings_gradle",
+      "type": "file",
+      "file": "settings.gradle.kts.md",
+      "x": 5620,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g35",
+      "type": "group",
+      "label": "Project README",
+      "x": 6780,
+      "y": 2860,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_xrdroiddesk_readme_xrdroiddesk",
+      "type": "file",
+      "file": "xrdroiddesk.md",
+      "x": 6800,
+      "y": 2940,
+      "width": 180,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity",
+      "toNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity",
+      "toNode": "n_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_activity",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "toNode": "n_activity",
+      "label": "inherits [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_usbmanager",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "toNode": "n_usbmanager",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "toNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_ondestroy",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity",
+      "toNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_ondestroy",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_usbmanager_camera_xrealglassescameratest_xrealglassescameratest",
+      "fromNode": "n_usbmanager",
+      "toNode": "n_camera_xrealglassescameratest_xrealglassescameratest",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbmanager_xrdroiddesk_mainactivity_mainactivity",
+      "fromNode": "n_usbmanager",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate_bundle",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "toNode": "n_bundle",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate_intent",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "toNode": "n_intent",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_grantusbpermissionactivity_oncreate",
+      "toNode": "n_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_bundle_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "fromNode": "n_bundle",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_intentdevice_intent",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "toNode": "n_intent",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_grantusbpermissionactivity_intentdevice_usbdevice",
+      "fromNode": "n_xrdroiddesk_grantusbpermissionactivity_intentdevice",
+      "toNode": "n_usbdevice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_intent_service_gestureaccessibilityservice_gestureaccessibilityservice_launchonglassesdisplay",
+      "fromNode": "n_intent",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_launchonglassesdisplay",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_intent_service_usbsetupautomator_usbsetupautomator_armnonuvcnoperm",
+      "fromNode": "n_intent",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcnoperm",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_intent_service_usbsetupautomator_usbsetupautomator_ondeviceattached",
+      "fromNode": "n_intent",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_ondeviceattached",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_intent_service_usbsetupautomator_usbsetupautomator_requestuvcperm",
+      "fromNode": "n_intent",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_requestuvcperm",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_intent_service_usbsetupautomator_usbsetupautomator_schedulecamerapermissionrequest",
+      "fromNode": "n_intent",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_schedulecamerapermissionrequest",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_usbdevice_camera_glassesuvcenabler_glassesuvcenabler",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_camera_xrealglassescamera_xrealglassescamera_finddevice",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_finddevice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_camera_xrealglassescamera_xrealglassescamera_findstreaminginterface",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_findstreaminginterface",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_camera_xrealglassescamera_xrealglassescamera_haspermission",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_haspermission",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_camera_xrealglassescamera_xrealglassescamera_open",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_open",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_camera_xrealglassescameratest_xrealglassescameratest_mockusbdevice",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_camera_xrealglassescameratest_xrealglassescameratest_mockusbdevice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_gestureaccessibilityservice_gestureaccessibilityservice_opencamera",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_opencamera",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_usbsetupautomator_usbsetupautomator",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_usbsetupautomator_usbsetupautomator_armnonuvcnoperm",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcnoperm",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_usbsetupautomator_usbsetupautomator_armnonuvcwithperm",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcwithperm",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_usbsetupautomator_usbsetupautomator_ondeviceattached",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_ondeviceattached",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdevice_service_usbsetupautomator_usbsetupautomator_requestuvcperm",
+      "fromNode": "n_usbdevice",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_requestuvcperm",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_xrdroiddesk_mainactivity_finishall",
+      "fromNode": "n_xrdroiddesk_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_finishall",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_xrdroiddesk_mainactivity_mainactivity",
+      "fromNode": "n_xrdroiddesk_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_appcompatactivity",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_appcompatactivity",
+      "label": "inherits [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_button",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_button",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_scrollview",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_scrollview",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_textview",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_textview",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_ondestroy",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_ondestroy",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_onnewintent",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_onnewintent",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_onresume",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_onresume",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_onstart",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_onstart",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_onstop",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_onstop",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_xrdroiddesk_mainactivity_mainactivity_yn",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_yn",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_oncreate_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_oncreate_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_oncreate",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult_array",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "toNode": "n_array",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult_int",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "toNode": "n_int",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult_intarray",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "toNode": "n_intarray",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult_string",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "toNode": "n_string",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onrequestpermissionsresult",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "fromNode": "n_int",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "fromNode": "n_int",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "fromNode": "n_int",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_h264framedecoder_toscaledbitmap",
+      "fromNode": "n_int",
+      "toNode": "n_camera_h264framedecoder_toscaledbitmap",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "fromNode": "n_int",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_pilotprotocol_pilotprotocol_crc32",
+      "fromNode": "n_int",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_crc32",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_xrealglassescamera_xrealglassescamera_buildhosttypeframe",
+      "fromNode": "n_int",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_buildhosttypeframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_camera_xrealglassescameratest_xrealglassescameratest_mockusbdevice",
+      "fromNode": "n_int",
+      "toNode": "n_camera_xrealglassescameratest_xrealglassescameratest_mockusbdevice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "fromNode": "n_int",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_int_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "fromNode": "n_int",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "fromNode": "n_string",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "fromNode": "n_string",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_service_gestureaccessibilityservice_gestureaccessibilityservice_uilog",
+      "fromNode": "n_string",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_uilog",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "fromNode": "n_string",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_service_usbsetupautomator_usbsetupautomator_findclickablebytext",
+      "fromNode": "n_string",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_findclickablebytext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_service_usbsetupautomator_usbsetupautomator_findnodebytext",
+      "fromNode": "n_string",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_findnodebytext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "fromNode": "n_string",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_string_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "fromNode": "n_string",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onnewintent_android",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onnewintent",
+      "toNode": "n_android",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onnewintent_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onnewintent",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_android_service_gestureaccessibilityservice_gestureaccessibilityservice_onunbind",
+      "fromNode": "n_android",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onunbind",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_android_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "fromNode": "n_android",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_handleusbattached_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_handleusbattached",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_onresume_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_onresume",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_appendlog",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate_xrdroiddesk_mainactivity_mainactivity_yn",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_logrequirementsstate",
+      "toNode": "n_xrdroiddesk_mainactivity_mainactivity_yn",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_xrdroiddesk_mainactivity_mainactivity_yn_boolean",
+      "fromNode": "n_xrdroiddesk_mainactivity_mainactivity_yn",
+      "toNode": "n_boolean",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_h264framedecoder_h264framedecoder_isannexb",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_isannexb",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_landmarktohanddata_landmarktohanddata",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_xrealglassescamera_xrealglassescamera",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_xrealglassescamera_xrealglassescamera_haspermission",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_haspermission",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_camera_xrealglassescamera_xrealglassescamera_open",
+      "fromNode": "n_boolean",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_open",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_service_gestureaccessibilityservice_gestureaccessibilityservice_onunbind",
+      "fromNode": "n_boolean",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_onunbind",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_service_usbsetupautomator_usbsetupautomator_handlecgusbdialog",
+      "fromNode": "n_boolean",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_handlecgusbdialog",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_service_usbsetupautomator_usbsetupautomator_hasuvc",
+      "fromNode": "n_boolean",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_hasuvc",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_boolean_service_usbsetupautomator_usbsetupautomator_onaccessibilityevent",
+      "fromNode": "n_boolean",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_onaccessibilityevent",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler",
+      "fromNode": "n_camera_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_openusbdevice",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_openusbdevice",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_camera_glassesuvcenabler_glassesuvcenabler_release",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_release",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_usbdeviceconnection",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_usbdeviceconnection",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_usbinterface",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_usbinterface",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_service_usbsetupautomator_usbsetupautomator_armnonuvcwithperm",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_armnonuvcwithperm",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_service_usbsetupautomator_usbsetupautomator_launchhidenable",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_launchhidenable",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_service_usbsetupautomator_usbsetupautomator_oncameraopenfailednonuvc",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_oncameraopenfailednonuvc",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_usbdeviceconnection_camera_xrealglassescamera_xrealglassescamera",
+      "fromNode": "n_usbdeviceconnection",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdeviceconnection_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "fromNode": "n_usbdeviceconnection",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdeviceconnection_camera_xrealglassescamera_xrealglassescamera_starthosttypekeepalive",
+      "fromNode": "n_usbdeviceconnection",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_starthosttypekeepalive",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbdeviceconnection_camera_xrealglassescamera_xrealglassescamera_startreading",
+      "fromNode": "n_usbdeviceconnection",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_startreading",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbinterface_camera_xrealglassescamera_xrealglassescamera",
+      "fromNode": "n_usbinterface",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbinterface_camera_xrealglassescamera_xrealglassescamera_findbulkinendpoint",
+      "fromNode": "n_usbinterface",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_findbulkinendpoint",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbinterface_camera_xrealglassescamera_xrealglassescamera_findstreaminginterface",
+      "fromNode": "n_usbinterface",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_findstreaminginterface",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_usbinterface_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "fromNode": "n_usbinterface",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_enableuvc_bytearray",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "toNode": "n_bytearray",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_enableuvc_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_enableuvc_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_enableuvc_camera_glassesuvcenabler_glassesuvcenabler_openusbdevice",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_enableuvc",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_openusbdevice",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe_bytearray",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "toNode": "n_bytearray",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "fromNode": "n_camera_glassesuvcenabler_glassesuvcenabler_buildhidframe",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_crc32hid",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_glassesuvcenabler_glassesuvcenabler_loghex",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_h264framedecoder_h264framedecoder_isannexb",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_isannexb",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_h264framedecoder_h264framedecoder_submit",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submit",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_h264framedecoder_toscaledbitmap",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_h264framedecoder_toscaledbitmap",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_buildget",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_buildget",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_buildmessage",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_buildmessage",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_buildsetusbconfig",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_buildsetusbconfig",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_crc32",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_crc32",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_parseresponse",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_parseresponse",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_pilotprotocol_pilotprotocol_parseusbconfig",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_pilotprotocol_pilotprotocol_parseusbconfig",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_uvcstreamcontrol_frombytes",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_uvcstreamcontrol_frombytes",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_uvcstreamcontrol_uvcstreamcontrol_tobytes",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_uvcstreamcontrol_uvcstreamcontrol_tobytes",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_xrealglassescamera_xrealglassescamera_buildhosttypeframe",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_buildhosttypeframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_negotiateformat",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_bytearray_camera_xrealglassescamera_xrealglassescamera_startreading",
+      "fromNode": "n_bytearray",
+      "toNode": "n_camera_xrealglassescamera_xrealglassescamera_startreading",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_camera_h264framedecoder_h264framedecoder",
+      "fromNode": "n_camera_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_camera_h264framedecoder_toscaledbitmap",
+      "fromNode": "n_camera_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_toscaledbitmap",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_autocloseable",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_autocloseable",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_close",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_close",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_configureandstart",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_configureandstart",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_isannexb",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_isannexb",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_submit",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submit",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_h264framedecoder_h264framedecoder_warmup",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_warmup",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_mediacodec",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_mediacodec",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_mediacodec_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "fromNode": "n_mediacodec",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_warmup_camera_h264framedecoder_h264framedecoder_submit",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder_warmup",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submit",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_h264framedecoder_submit_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "fromNode": "n_camera_h264framedecoder_h264framedecoder_submit",
+      "toNode": "n_camera_h264framedecoder_h264framedecoder_submittobuffer",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_h264framedecoder_toscaledbitmap_bitmap",
+      "fromNode": "n_camera_h264framedecoder_toscaledbitmap",
+      "toNode": "n_bitmap",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bitmap_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "fromNode": "n_bitmap",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_bitmap_camera_handlandmarkerhelper_handlandmarkerhelper_rotatebitmap",
+      "fromNode": "n_bitmap",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_rotatebitmap",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "fromNode": "n_camera_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_camera_handlandmarkerhelper_tohanddata",
+      "fromNode": "n_camera_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_tohanddata",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_camera_handlandmarkerhelper_handlandmarkerhelper_close",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_close",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_camera_handlandmarkerhelper_handlandmarkerhelper_rotatebitmap",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_rotatebitmap",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_handlandmarker",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_handlandmarker",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_service_gestureaccessibilityservice_gestureaccessibilityservice",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_service_gestureaccessibilityservice_gestureaccessibilityservice_starthandtracking",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_starthandtracking",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_handlandmarkerhelper_processframe_long",
+      "fromNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_processframe",
+      "toNode": "n_long",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_long_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "fromNode": "n_long",
+      "toNode": "n_camera_handlandmarkerhelper_handlandmarkerhelper_maybesaveframe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_tohanddata_camera_landmarktohanddata_landmarktohanddata",
+      "fromNode": "n_camera_handlandmarkerhelper_tohanddata",
+      "toNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_tohanddata_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "fromNode": "n_camera_handlandmarkerhelper_tohanddata",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_handlandmarkerhelper_tohanddata_gesture_handdata_handdata",
+      "fromNode": "n_camera_handlandmarkerhelper_tohanddata",
+      "toNode": "n_gesture_handdata_handdata",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_camera_handtrackingpipeline_handtrackingpipeline",
+      "fromNode": "n_camera_handtrackingpipeline",
+      "toNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_camera_handtrackingpipeline_handtrackingpipeline_onhanddata",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_camera_handtrackingpipeline_handtrackingpipeline_onhanddata",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_camera_handtrackingpipeline_handtrackingpipeline_stop",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_camera_handtrackingpipeline_handtrackingpipeline_stop",
+      "label": "method [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_camera_handtrackingpipelinetest_handtrackingpipelinetest",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_camera_handtrackingpipelinetest_handtrackingpipelinetest_setup",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_camera_handtrackingpipelinetest_handtrackingpipelinetest_setup",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_service_gestureaccessibilityservice_gestureaccessibilityservice",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_service_gestureaccessibilityservice_gestureaccessibilityservice_starthandtracking",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_starthandtracking",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_handtrackingpipeline_handtrackingpipeline_onhanddata_gesture_handdata_handdata",
+      "fromNode": "n_camera_handtrackingpipeline_handtrackingpipeline_onhanddata",
+      "toNode": "n_gesture_handdata_handdata",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_camera_landmarktohanddata_landmarkindex",
+      "fromNode": "n_camera_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddata_landmarkindex",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_camera_landmarktohanddata_landmarktohanddata",
+      "fromNode": "n_camera_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "label": "contains [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_float",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_float",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_gesture_handdata_handdata",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_gesture_handdata_handdata",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_gesture_pose_pose",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_gesture_pose_pose",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_list",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_list",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_triple",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_triple",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_camera_landmarktohanddatatest_landmarktohanddatatest_pointer_pose_uses_image_x_and_y_of_index_mcp",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_pointer_pose_uses_image_x_and_y_of_index_mcp",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_at_same_world_position_gives_pinchstrength_1",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_at_same_world_position_gives_pinchstrength_1",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_far_apart_gives_pinchstrength_0",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_far_apart_gives_pinchstrength_0",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_camera_landmarktohanddata_landmarktohanddata_camera_landmarktohanddatatest_landmarktohanddatatest_untracked_input_yields_untracked_handdata",
+      "fromNode": "n_camera_landmarktohanddata_landmarktohanddata",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_untracked_input_yields_untracked_handdata",
+      "label": "calls [INFERRED]"
+    },
+    {
+      "id": "e_list_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "fromNode": "n_list",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_list_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "fromNode": "n_list",
+      "toNode": "n_service_gestureaccessibilityservice_gestureaccessibilityservice_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_list_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "fromNode": "n_list",
+      "toNode": "n_service_usbsetupautomator_usbsetupautomator_collectalltext",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_triple_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "fromNode": "n_triple",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_triple_camera_landmarktohanddatatest_landmarktohanddatatest_pointer_pose_uses_image_x_and_y_of_index_mcp",
+      "fromNode": "n_triple",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_pointer_pose_uses_image_x_and_y_of_index_mcp",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_triple_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_far_apart_gives_pinchstrength_0",
+      "fromNode": "n_triple",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_thumb_and_index_far_apart_gives_pinchstrength_0",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_float_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "fromNode": "n_float",
+      "toNode": "n_camera_landmarktohanddatatest_landmarktohanddatatest_landmarks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_dispatchclick",
+      "fromNode": "n_float",
+      "toNode": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_dispatchclick",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_normalizedtopixels",
+      "fromNode": "n_float",
+      "toNode": "n_controller_accessibilitydesktopcontroller_accessibilitydesktopcontroller_normalizedtopixels",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_controller_gestureactiondispatcher_gestureactiondispatcher_triggerclick",
+      "fromNode": "n_float",
+      "toNode": "n_controller_gestureactiondispatcher_gestureactiondispatcher_triggerclick",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_gesture_gesturerecognizer_gesturerecognizer",
+      "fromNode": "n_float",
+      "toNode": "n_gesture_gesturerecognizer_gesturerecognizer",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_gesture_gesturerecognizer_gesturerecognizer_detectswipe",
+      "fromNode": "n_float",
+      "toNode": "n_gesture_gesturerecognizer_gesturerecognizer_detectswipe",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_float_gesture_gesturerecognizertest_gesturerecognizertest_tracked",
+      "fromNode": "n_float",
+      "toNode": "n_gesture_gesturerecognizertest_gesturerecognizertest_tracked",
+      "label": "references [EXTRACTED]"
+    }
+  ]
+}

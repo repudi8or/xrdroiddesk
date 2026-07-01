@@ -25,3 +25,12 @@ __MACOSX/
 # Pre-commit cache
 .pre-commit-cache/
 .agent-state/
+
+# MediaPipe model — download via `make download-model`, not committed
+*.task
+
+# Graphify build cache — regeneratable
+graphify-out/cache/
+
+# Logs
+xrd.log
