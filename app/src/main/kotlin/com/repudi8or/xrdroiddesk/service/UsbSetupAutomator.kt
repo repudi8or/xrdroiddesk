@@ -46,6 +46,7 @@ class UsbSetupAutomator(
     private var cgPermTapped = false
     private var cgCameraToggleTapped = false
     private var usbAttachTimestampMs = 0L
+    private var tcpEnablePending = false
 
     // Set when the manifest-filter GrantUsbPermissionActivity notifies us via
     // onDeviceAttached(skipActivityLaunch=true). Prevents the 200ms coroutine from
@@ -97,6 +98,7 @@ class UsbSetupAutomator(
             } else {
                 cgAllowPhase = true
                 handleCgUsbDialog()
+                launchTcpEnable()
                 if (!selfPermPending) {
                     selfPermPending = true
                     if (!skipActivityLaunch) {
@@ -134,6 +136,7 @@ class UsbSetupAutomator(
         cgAllowPhase = false
         uvcPhaseActive = false
         hidEnablePending = false
+        tcpEnablePending = false
         selfPermPending = false
         manifestActivityStarted = false
         cgChooserClickPending = false
@@ -168,6 +171,7 @@ class UsbSetupAutomator(
         usbSessionActive = true
         cgAllowPhase = true
         handleCgUsbDialog()
+        launchTcpEnable()
         if (!selfPermPending) {
             selfPermPending = true
             scope.launch {
@@ -266,6 +270,7 @@ class UsbSetupAutomator(
         cgAllowPhase = false
         uvcPhaseActive = false
         hidEnablePending = false
+        tcpEnablePending = false
         selfPermPending = false
         manifestActivityStarted = false
         cgChooserClickPending = false
@@ -278,6 +283,20 @@ class UsbSetupAutomator(
     // -------------------------------------------------------------------------
     // Private — HID enable
     // -------------------------------------------------------------------------
+
+    private fun launchTcpEnable() {
+        if (tcpEnablePending) return
+        tcpEnablePending = true
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val enabler = GlassesUvcEnabler(context)
+                val ok = enabler.enableUvcViaTcp()
+                uiLog("TCP enableUvc: ${if (ok) "✓ SET sent — awaiting re-enum" else "✗ GET heartbeats (MCU not in config mode via TCP)"}")
+            } finally {
+                tcpEnablePending = false
+            }
+        }
+    }
 
     private fun launchHidEnable() {
         // Use IO dispatcher so the coroutine starts on a background thread immediately,

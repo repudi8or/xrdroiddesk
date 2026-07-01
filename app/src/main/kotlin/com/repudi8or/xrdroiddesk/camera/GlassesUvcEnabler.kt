@@ -11,6 +11,9 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -69,6 +72,15 @@ class GlassesUvcEnabler(
         // On the fast path (HOST_TYPE within ~100ms of attach) the MCU should respond quickly.
         // Keep this short — if we're still getting heartbeats after 1.5s, the window was missed.
         private const val GET_RESPONSE_WAIT_MS = 1500L
+
+        private const val TCP_HOST = "169.254.1.1"
+        private const val TCP_PORT = 50180
+
+        // Total budget to establish the TCP connection (NCM may take a moment to come up).
+        private const val TCP_CONNECT_BUDGET_MS = 2000L
+
+        // Timeout per individual connect attempt before retrying.
+        private const val TCP_CONNECT_ATTEMPT_MS = 300
     }
 
     /**
@@ -201,6 +213,118 @@ class GlassesUvcEnabler(
             val ok = sSent == setFrame.size
             Log.i(TAG, "═══ enableUvc END result=$ok ═══")
             ok
+        }
+
+    /**
+     * Enable UVC via TCP pilot path (169.254.1.1:50180) using HID-format frames.
+     * No USB Host permission required — uses the NCM Ethernet interface (available immediately
+     * on attach, before any permission dialog). Sends the same HOST_TYPE→SDK_VERSION→GET→SET
+     * sequence as the HID path, but over TCP. Returns true if SET was sent after a real GET
+     * response (real config rather than heartbeat).
+     */
+    suspend fun enableUvcViaTcp(): Boolean =
+        withContext(Dispatchers.IO) {
+            Log.i(TAG, "═══ enableUvcViaTcp START ═══")
+            var socket: Socket? = null
+            val connDeadline = System.currentTimeMillis() + TCP_CONNECT_BUDGET_MS
+            while (System.currentTimeMillis() < connDeadline) {
+                try {
+                    val s = Socket()
+                    s.connect(InetSocketAddress(TCP_HOST, TCP_PORT), TCP_CONNECT_ATTEMPT_MS)
+                    socket = s
+                    break
+                } catch (_: Exception) {
+                    delay(50L)
+                }
+            }
+            if (socket == null) {
+                Log.w(TAG, "TCP: could not connect to $TCP_HOST:$TCP_PORT within ${TCP_CONNECT_BUDGET_MS}ms")
+                return@withContext false
+            }
+            Log.i(TAG, "TCP: connected to $TCP_HOST:$TCP_PORT")
+
+            try {
+                val out = socket.getOutputStream()
+                val inp = socket.getInputStream()
+                socket.soTimeout = HID_RESPONSE_TIMEOUT_MS
+
+                val htFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
+                out.write(htFrame)
+                out.flush()
+                logHex("TCP HOST_TYPE frame", htFrame)
+                Log.i(TAG, "TCP HOST_TYPE=2 sent (${htFrame.size}B)")
+
+                val vFrame = buildHidFrame(MSG_W_SDK_VERSION, HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0))
+                out.write(vFrame)
+                out.flush()
+                Log.i(TAG, "TCP SDK_VERSION sent (${vFrame.size}B)")
+
+                delay(HID_POST_INIT_DELAY_MS)
+
+                val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
+                out.write(getFrame)
+                out.flush()
+                Log.i(TAG, "TCP GET sent")
+
+                var currentConfig = 0
+                var gotConfig = false
+                val readBuf = ByteArray(1024)
+                val deadline = System.currentTimeMillis() + GET_RESPONSE_WAIT_MS
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        val r = inp.read(readBuf)
+                        if (r < 7) continue
+                        val innerLen = (readBuf[5].toInt() and 0xFF) or ((readBuf[6].toInt() and 0xFF) shl 8)
+                        val msgId = (readBuf[15].toInt() and 0xFF) or ((readBuf[16].toInt() and 0xFF) shl 8)
+                        if (innerLen > 17 && r >= 26) {
+                            currentConfig =
+                                (readBuf[22].toInt() and 0xFF) or
+                                ((readBuf[23].toInt() and 0xFF) shl 8) or
+                                ((readBuf[24].toInt() and 0xFF) shl 16) or
+                                ((readBuf[25].toInt() and 0xFF) shl 24)
+                            Log.i(
+                                TAG,
+                                "TCP GET real response innerLen=$innerLen msgId=0x${msgId.toString(
+                                    16,
+                                )} currentConfig=0x${currentConfig.toString(16)} ✓",
+                            )
+                            logHex("TCP GET response", readBuf.copyOf(r))
+                            gotConfig = true
+                            break
+                        } else {
+                            Log.d(TAG, "TCP GET heartbeat innerLen=$innerLen msgId=0x${msgId.toString(16)}")
+                        }
+                    } catch (_: SocketTimeoutException) {
+                        // socket read timeout — loop until deadline
+                    }
+                }
+
+                if (!gotConfig) {
+                    Log.w(TAG, "═══ enableUvcViaTcp END result=false (GET heartbeats only) ═══")
+                    return@withContext false
+                }
+
+                val newConfig = currentConfig or UVC_ENABLE_MASK
+                val setPayload =
+                    ByteBuffer
+                        .allocate(4)
+                        .order(ByteOrder.LITTLE_ENDIAN)
+                        .apply { putInt(newConfig) }
+                        .array()
+                val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, setPayload)
+                out.write(setFrame)
+                out.flush()
+                logHex("TCP SET frame", setFrame)
+                Log.i(TAG, "TCP SET sent newConfig=0x${newConfig.toString(16)} — expecting re-enum in ~2s")
+
+                Log.i(TAG, "═══ enableUvcViaTcp END result=true ═══")
+                true
+            } finally {
+                try {
+                    socket.close()
+                } catch (_: Exception) {
+                }
+            }
         }
 
     private fun openUsbDevice() {
