@@ -22,6 +22,8 @@ import com.repudi8or.xrdroiddesk.controller.AccessibilityDesktopController
 import com.repudi8or.xrdroiddesk.controller.GestureActionDispatcher
 import com.repudi8or.xrdroiddesk.gesture.GestureConfig
 import com.repudi8or.xrdroiddesk.gesture.GestureRecognizer
+import com.repudi8or.xrdroiddesk.gesture.Pose
+import com.repudi8or.xrdroiddesk.ui.CursorOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,6 +38,12 @@ class GestureAccessibilityService : AccessibilityService() {
     private var pipeline: HandTrackingPipeline? = null
     private var landmarker: HandLandmarkerHelper? = null
     private var camera: XRealGlassesCamera? = null
+    private var cursorOverlay: CursorOverlay? = null
+    private val gestureConfig = GestureConfig()
+
+    // EMA state — smoothed, remapped cursor position
+    private var smoothX = 0.5f
+    private var smoothY = 0.5f
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var retryJob: Job? = null
     private var stateLogJob: Job? = null
@@ -47,14 +55,11 @@ class GestureAccessibilityService : AccessibilityService() {
     private val displayListener =
         object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) {
-                Log.d(TAG, "onDisplayAdded: id=$displayId lastLaunched=$lastLaunchedDisplayId")
-                if (displayId != Display.DEFAULT_DISPLAY && lastLaunchedDisplayId != displayId) {
-                    uiLog("external display $displayId added — launching xrdroiddesk")
-                    launchOnGlassesDisplay()
-                } else if (lastLaunchedDisplayId == displayId) {
-                    Log.d(TAG, "onDisplayAdded: display $displayId already launched — skipping")
-                }
+                Log.d(TAG, "onDisplayAdded: id=$displayId")
                 if (displayId != Display.DEFAULT_DISPLAY) {
+                    uiLog("glasses display $displayId appeared — cursor overlay ready")
+                    cursorOverlay?.close()
+                    cursorOverlay = CursorOverlay(this@GestureAccessibilityService, displayId)
                     val cam = camera
                     if (cam != null && !cam.isOpen && !usbSetup.hidEnablePending) {
                         Log.d(TAG, "onDisplayAdded: external display appeared — calling tryConnectCamera()")
@@ -64,8 +69,11 @@ class GestureAccessibilityService : AccessibilityService() {
             }
 
             override fun onDisplayRemoved(displayId: Int) {
-                Log.d(TAG, "onDisplayRemoved: id=$displayId lastLaunched=$lastLaunchedDisplayId")
-                if (displayId == lastLaunchedDisplayId) lastLaunchedDisplayId = Display.INVALID_DISPLAY
+                Log.d(TAG, "onDisplayRemoved: id=$displayId")
+                if (displayId != Display.DEFAULT_DISPLAY) {
+                    cursorOverlay?.close()
+                    cursorOverlay = null
+                }
             }
 
             override fun onDisplayChanged(displayId: Int) {}
@@ -144,8 +152,9 @@ class GestureAccessibilityService : AccessibilityService() {
         dm.registerDisplayListener(displayListener, null)
         val existingExternal = dm.displays.filter { it.displayId != Display.DEFAULT_DISPLAY }
         if (existingExternal.isNotEmpty()) {
-            Log.d(TAG, "onServiceConnected: ${existingExternal.size} external display(s) already present — launching")
-            launchOnGlassesDisplay()
+            val d = existingExternal.first()
+            Log.d(TAG, "onServiceConnected: external display ${d.displayId} already present — creating cursor overlay")
+            cursorOverlay = CursorOverlay(this, d.displayId)
         }
         val usbFilter =
             IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED).apply {
@@ -299,9 +308,6 @@ class GestureAccessibilityService : AccessibilityService() {
         if (opened) {
             uiLog("camera open OK (${elapsedMs}ms)")
             usbSetup.onCameraOpened()
-            // Reset so launchOnGlassesDisplay() runs even if it already ran from onDisplayAdded.
-            lastLaunchedDisplayId = Display.INVALID_DISPLAY
-            launchOnGlassesDisplay()
             return
         }
         val uvcActive =
@@ -369,7 +375,19 @@ class GestureAccessibilityService : AccessibilityService() {
     private fun startHandTracking() {
         val helper =
             HandLandmarkerHelper(this) { handData ->
-                pipeline?.onHandData(handData)
+                val mapped =
+                    if (handData.isTracked && handData.pointerPose != null) {
+                        val rx = remap(handData.pointerPose.x, gestureConfig.pointerXMin, gestureConfig.pointerXMax)
+                        val ry = remap(handData.pointerPose.y, gestureConfig.pointerYMin, gestureConfig.pointerYMax)
+                        val a = gestureConfig.pointerSmoothing
+                        smoothX = a * rx + (1f - a) * smoothX
+                        smoothY = a * ry + (1f - a) * smoothY
+                        handData.copy(pointerPose = Pose(smoothX, smoothY, handData.pointerPose.z))
+                    } else {
+                        handData
+                    }
+                cursorOverlay?.update(smoothX, smoothY, handData.isTracked)
+                pipeline?.onHandData(mapped)
             }
         landmarker = helper
 
@@ -399,9 +417,13 @@ class GestureAccessibilityService : AccessibilityService() {
         usbSetup.reset()
         pipeline?.stop()
         landmarker?.close()
+        cursorOverlay?.close()
         pipeline = null
         landmarker = null
         camera = null
+        cursorOverlay = null
+        smoothX = 0.5f
+        smoothY = 0.5f
     }
 
     private fun startStateLogger() {
@@ -562,6 +584,12 @@ class GestureAccessibilityService : AccessibilityService() {
                 ?.appendLog(msg)
         }
     }
+
+    private fun remap(
+        v: Float,
+        inMin: Float,
+        inMax: Float,
+    ): Float = ((v - inMin) / (inMax - inMin)).coerceIn(0f, 1f)
 
     companion object {
         private const val TAG = "GestureA11yService"
