@@ -11,6 +11,11 @@ data class GestureConfig(
     val pointerXMax: Float = 0.90f,
     val pointerYMin: Float = 0.05f,
     val pointerYMax: Float = 0.75f,
-    // EMA smoothing factor: 0 = frozen, 1 = no smoothing. ~0.35 is responsive but stable.
-    val pointerSmoothing: Float = 0.35f,
+    // One Euro Filter params for cursor smoothing.
+    // minCutoff: lower = smoother at rest (try 0.5–2.0 Hz).
+    // beta: higher = less lag during fast movement (try 0.001–0.05 for normalised coords).
+    // dCutoff: smoothing applied to the speed estimate; 1 Hz is a good default.
+    val oneEuroMinCutoff: Float = 1.0f,
+    val oneEuroBeta: Float = 0.007f,
+    val oneEuroDCutoff: Float = 1.0f,
 )

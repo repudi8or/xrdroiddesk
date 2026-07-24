@@ -57,10 +57,10 @@ class LandmarkToHandDataTest {
     }
 
     @Test
-    fun `pointer pose uses image X and Y of index MCP`() {
+    fun `pointer pose uses image X and Y of wrist`() {
         val image =
             landmarks(
-                LandmarkIndex.INDEX_MCP to Triple(0.6f, 0.4f, 0f),
+                LandmarkIndex.WRIST to Triple(0.6f, 0.4f, 0f),
             )
         val result = landmarkToHandData(isTracked = true, worldLandmarks = landmarks(), imageLandmarks = image)
         assertEquals(0.6f, result.pointerPose!!.x, 0.001f)

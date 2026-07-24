@@ -49,12 +49,12 @@ class GestureRecognizerTest {
     @Test
     fun `returns SwipeRight when pointer moves right beyond threshold`() {
         recognizer.recognize(tracked(pointerX = 0.0f))
-        assertEquals(Gesture.SwipeRight, recognizer.recognize(tracked(pointerX = 0.1f)))
+        assertEquals(Gesture.SwipeRight, recognizer.recognize(tracked(pointerX = 0.25f)))
     }
 
     @Test
     fun `returns SwipeLeft when pointer moves left beyond threshold`() {
-        recognizer.recognize(tracked(pointerX = 0.1f))
+        recognizer.recognize(tracked(pointerX = 0.25f))
         assertEquals(Gesture.SwipeLeft, recognizer.recognize(tracked(pointerX = 0.0f)))
     }
 
@@ -86,7 +86,7 @@ class GestureRecognizerTest {
         recognizer.recognize(tracked(pointerX = 0.0f))
         recognizer.recognize(untracked())
         recognizer.recognize(tracked(pointerX = 0.0f)) // first frame after re-track
-        assertEquals(Gesture.SwipeRight, recognizer.recognize(tracked(pointerX = 0.1f)))
+        assertEquals(Gesture.SwipeRight, recognizer.recognize(tracked(pointerX = 0.25f)))
     }
 
     // ── Priority ──────────────────────────────────────────────────────────

@@ -41,9 +41,18 @@ class GestureAccessibilityService : AccessibilityService() {
     private var cursorOverlay: CursorOverlay? = null
     private val gestureConfig = GestureConfig()
 
-    // EMA state — smoothed, remapped cursor position
-    private var smoothX = 0.5f
-    private var smoothY = 0.5f
+    private var filterX =
+        com.repudi8or.xrdroiddesk.tracking.OneEuroFilter(
+            minCutoff = gestureConfig.oneEuroMinCutoff,
+            beta = gestureConfig.oneEuroBeta,
+            dCutoff = gestureConfig.oneEuroDCutoff,
+        )
+    private var filterY =
+        com.repudi8or.xrdroiddesk.tracking.OneEuroFilter(
+            minCutoff = gestureConfig.oneEuroMinCutoff,
+            beta = gestureConfig.oneEuroBeta,
+            dCutoff = gestureConfig.oneEuroDCutoff,
+        )
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var retryJob: Job? = null
     private var stateLogJob: Job? = null
@@ -383,14 +392,16 @@ class GestureAccessibilityService : AccessibilityService() {
                     if (handData.isTracked && handData.pointerPose != null) {
                         val rx = remap(handData.pointerPose.x, gestureConfig.pointerXMin, gestureConfig.pointerXMax)
                         val ry = remap(handData.pointerPose.y, gestureConfig.pointerYMin, gestureConfig.pointerYMax)
-                        val a = gestureConfig.pointerSmoothing
-                        smoothX = a * rx + (1f - a) * smoothX
-                        smoothY = a * ry + (1f - a) * smoothY
-                        handData.copy(pointerPose = Pose(smoothX, smoothY, handData.pointerPose.z))
+                        val now = System.currentTimeMillis()
+                        val sx = filterX.filter(rx, now)
+                        val sy = filterY.filter(ry, now)
+                        handData.copy(pointerPose = Pose(sx, sy, handData.pointerPose.z))
                     } else {
                         handData
                     }
-                cursorOverlay?.update(smoothX, smoothY, handData.isTracked)
+                val fx = (mapped.pointerPose?.x ?: 0.5f)
+                val fy = (mapped.pointerPose?.y ?: 0.5f)
+                cursorOverlay?.update(fx, fy, handData.isTracked)
                 pipeline?.onHandData(mapped)
             }
         landmarker = helper
@@ -426,8 +437,8 @@ class GestureAccessibilityService : AccessibilityService() {
         landmarker = null
         camera = null
         cursorOverlay = null
-        smoothX = 0.5f
-        smoothY = 0.5f
+        filterX.reset()
+        filterY.reset()
     }
 
     private fun startStateLogger() {
