@@ -53,6 +53,11 @@ class GestureAccessibilityService : AccessibilityService() {
             beta = gestureConfig.oneEuroBeta,
             dCutoff = gestureConfig.oneEuroDCutoff,
         )
+    private val mapper =
+        com.repudi8or.xrdroiddesk.tracking.RelativeCursorMapper(
+            sensitivity = gestureConfig.relativeSensitivity,
+            deadZone = gestureConfig.relativeDeadZone,
+        )
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var retryJob: Job? = null
     private var stateLogJob: Job? = null
@@ -390,18 +395,16 @@ class GestureAccessibilityService : AccessibilityService() {
             HandLandmarkerHelper(this) { handData ->
                 val mapped =
                     if (handData.isTracked && handData.pointerPose != null) {
-                        val rx = remap(handData.pointerPose.x, gestureConfig.pointerXMin, gestureConfig.pointerXMax)
-                        val ry = remap(handData.pointerPose.y, gestureConfig.pointerYMin, gestureConfig.pointerYMax)
                         val now = System.currentTimeMillis()
-                        val sx = filterX.filter(rx, now)
-                        val sy = filterY.filter(ry, now)
-                        handData.copy(pointerPose = Pose(sx, sy, handData.pointerPose.z))
+                        val sx = filterX.filter(handData.pointerPose.x, now)
+                        val sy = filterY.filter(handData.pointerPose.y, now)
+                        mapper.update(sx, sy)
+                        handData.copy(pointerPose = Pose(mapper.x, mapper.y, handData.pointerPose.z))
                     } else {
+                        mapper.onHandLost()
                         handData
                     }
-                val fx = (mapped.pointerPose?.x ?: 0.5f)
-                val fy = (mapped.pointerPose?.y ?: 0.5f)
-                cursorOverlay?.update(fx, fy, handData.isTracked)
+                cursorOverlay?.update(mapper.x, mapper.y, handData.isTracked)
                 pipeline?.onHandData(mapped)
             }
         landmarker = helper
@@ -439,6 +442,7 @@ class GestureAccessibilityService : AccessibilityService() {
         cursorOverlay = null
         filterX.reset()
         filterY.reset()
+        mapper.reset()
     }
 
     private fun startStateLogger() {
@@ -599,12 +603,6 @@ class GestureAccessibilityService : AccessibilityService() {
                 ?.appendLog(msg)
         }
     }
-
-    private fun remap(
-        v: Float,
-        inMin: Float,
-        inMax: Float,
-    ): Float = ((v - inMin) / (inMax - inMin)).coerceIn(0f, 1f)
 
     companion object {
         private const val TAG = "GestureA11yService"
