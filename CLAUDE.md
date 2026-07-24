@@ -8,78 +8,304 @@ Use hand gestures detected by XReal One Pro glasses to control the **Android Des
 
 When XReal glasses are plugged into the Pixel 10 Pro via USB-C, Android prompts for either **Mirror mode** (phone screen duplicated) or **Desktop mode** (independent windowed desktop environment). **This project targets Desktop mode only.** Mirror mode is out of scope.
 
+## Feature Goals (including stretch)
+
+| Priority | Feature |
+|---|---|
+| Core | Hand gesture control of Android Desktop via UVC + MediaPipe |
+| Core | Phone primary screen off while glasses continue showing desktop + hand tracking |
+| Core | Voice keyboard input support in glasses desktop (accessibility service integration) |
+| Stretch | macOS companion app (KMP + Swift/CGEvent) |
+
+### Phone screen off — glasses desktop remains active
+
+The user wants to use the glasses as a standalone desktop display with the phone screen powered off (not just dimmed), while hand tracking and voice keyboard continue to work. This requires:
+- Keeping the external display (glasses) alive when the phone screen turns off — Android normally kills external displays on screen-off; this may need `WakeLock` on the display or a `PowerManager` flag
+- Keeping the accessibility service (and UVC camera loop) running with screen off — `AccessibilityService` survives screen-off if the service is bound; the UVC coroutine should keep reading frames
+- Voice keyboard: the Android on-screen keyboard should still function on the external display; `InputMethodService` integration may be needed if the system IME doesn't follow the external display
+- Investigation: `PowerManager.SCREEN_BRIGHT_WAKE_LOCK` on the external display, or `DisplayManager` `VirtualDisplay` approaches
+
 ## Target Hardware
 
-- **Glasses**: XReal One Pro (primary), extensible to other XReal/NRSDK-compatible glasses
+- **Glasses**: XReal One Pro (primary), extensible to other UVC-capable glasses
 - **Phone**: Google Pixel 10 Pro (primary), extensible to any Android phone supporting desktop mode
 - **Mac** *(stretch goal)*: MacBook — glasses connect via USB-C; macOS control via a companion Mac app
-- **Connection**: USB-C or wireless depending on XReal SDK support
+- **Connection**: USB-C
+- **Required app on phone**: [Control Glasses](https://play.google.com/store/apps/details?id=ai.nreal.controlglasses) — must be installed and **UVC mode enabled** (toggle in app settings: "enable uvc mode to stream RGB camera data from the glasses")
 
 ## Key SDKs & Dependencies
 
-- **Android SDK** — minSdk 29 required by XREAL SDK; targetSdk latest stable
-- **XREAL SDK 3.1.0** (current, replaces NRSDK) — spatial computing, hand tracking, gesture recognition
-  - Docs: https://docs.xreal.com
-  - Download: https://developer.xreal.com/download
-  - **Important:** XREAL SDK 3.x is Unity-only (Unity 2021.3+, XR Plugin umbrella). Native Android path is unclear — may require staying on NRSDK or contacting XReal developer support.
-- **NRSDK (legacy, still documented)** — older proprietary Android SDK; same hand tracking API surface but not actively developed
-  - Docs: https://xreal.gitbook.io/nrsdk
-  - Migration guide: https://docs.xreal.com/MigratingFromNRSDKToXREALSDK/intro
+- **Android SDK** — minSdk 29; targetSdk 35
+- **XREAL SDK 3.1.0 / NRSDK** — both Unity-only; no native Android AAR published. Not used in this project.
+- **MediaPipe Tasks Vision** (`com.google.mediapipe:tasks-vision`) — on-device ML hand landmarking (21 joints) from camera frames. Used to convert UVC frames into `HandData`.
+- **Jetpack XR** (`androidx.xr.*`) — Google's Android XR SDK supporting hand tracking on Android XR headsets (e.g., Samsung Galaxy XR). Not applicable to XReal glasses connected to a standard Android phone.
+- **Kotlinx Coroutines** (`kotlinx-coroutines-android`) — async UVC frame reading loop.
 
-### Hand Tracking API (NRSDK / XREAL SDK)
+## XReal One Pro UVC Camera Access
 
-**Core classes:**
+The XReal One Pro exposes its built-in RGB cameras as standard **UVC (USB Video Class)** devices when UVC mode is enabled via the **Control Glasses** app. This is the hand-tracking camera source for this project.
 
-| Class | Purpose |
+**One-time setup:** Open "Control Glasses" on the phone → enable the UVC toggle ("enable uvc mode to stream RGB camera data from the glasses").
+
+**USB device details** (discovered via ADB while glasses connected):
+
+| Field | Value |
 |---|---|
-| `NRInput` | Main input manager; switch between hand and controller modes |
-| `NRHand` | Represents one hand (left or right) |
-| `HandState` | Per-frame snapshot of a hand's tracking data |
-| `HandJointID` | Enum of 23 tracked joint points |
+| Manufacturer | XREAL |
+| Product | XREAL One Pro |
+| Vendor ID | `0x3318` (13080 decimal) |
+| Product ID | `0x0436` (1078 decimal) |
+| USB path | `/dev/bus/usb/001/003` |
+| Configuration | `hid+ncm+ecm+uac1+uvc_bulk_15_xreal0+uvc_bulk_15_xreal1` |
+| UVC interfaces | class=14/subclass=1 (VideoControl) + class=14/subclass=2 (VideoStreaming) × 2 |
 
-**Key methods & properties:**
+**Two stereo UVC cameras:** `xreal0` and `xreal1` (bulk transfer, ~15 fps). Either stream works for hand landmarking.
 
-```csharp
-// Switch to hand tracking input
-NRInput.SetInputSource(InputSourceEnum.Hands); // InputSourceEnum: Hands | Controller
+**Access method:** Android USB Host API (`UsbManager.getDeviceList()` → `UsbDeviceConnection.bulkTransfer()`). The camera does **not** appear in the Camera2 API — it must be opened directly via USB Host. Implemented in `XRealGlassesCamera`.
 
-// Check tracking state
-bool active = NRInput.Hands.IsRunning;
-bool systemGesture = NRInput.Hands.IsPerformingSystemGesture();
+**UVC frame acquisition flow:**
+1. Find device by VID/PID via `UsbManager`
+2. Claim VideoStreaming interface (class=14, subclass=2)
+3. `VS_PROBE_CONTROL` GET_CUR → SET_CUR to negotiate format
+4. `VS_COMMIT_CONTROL` SET_CUR to commit
+5. `bulkTransfer()` loop; parse 2-byte UVC payload header (FID toggle, EOF bit) to assemble MJPEG frames
+6. `BitmapFactory.decodeByteArray()` → `BitmapImageBuilder(bitmap).build()` → MediaPipe `MPImage`
 
-// Get per-hand state (HandEnum: RightHand | LeftHand)
-HandState state = NRInput.Hands.GetHandState(HandEnum.RightHand);
+**First connection:** Android shows a one-time USB permission dialog for the app. Permission is stored per-app.
 
-bool   isTracked     = state.isTracked;
-bool   isPinching    = state.isPinching;
-float  pinchStrength = state.pinchStrength;   // 0.0 – 1.0
-var    gesture       = state.currentGesture;  // HandGesture enum (6 types)
-Pose   pointer       = state.pointerPose;
-bool   pointerValid  = state.pointerPoseValid;
+**`android.hardware.usb.host` feature required** in manifest; no `CAMERA` permission needed (USB Host path bypasses Camera2).
 
-// Get pose of a specific joint
-Pose thumbTip  = state.GetJointPose(HandJointID.ThumbTip);
-Pose indexTip  = state.GetJointPose(HandJointID.IndexTip);
+## Autonomous UVC Enablement (bypassing Control Glasses)
+
+**Goal:** Enable UVC mode on the glasses from within xrdroiddesk itself, so the user doesn't need to open Control Glasses and toggle the UVC switch manually.
+
+**Implementation:** `GlassesUvcEnabler.kt` — sends HID USB commands directly to the glasses MCU.
+
+**RE source:** `libnr_glasses_api.so` from the Control Glasses APK (`ai.nreal.controlglasses`, jadx-decompiled), plus Java sources from `XREALManager.java`.
+
+### HID interfaces on XReal One Pro
+
+Two HID interfaces (USB class=3) are present even before UVC mode is enabled:
+
+| Interface | bInterfaceNumber | Endpoints | Purpose |
+|---|---|---|---|
+| Init + Config | 0 | ep_01 OUT / ep_81 IN | Host init AND GET/SET USB config — all HID commands go here |
+| Consumer Control | 8 | ep_05 OUT / ep_88 IN | Consumer Control HID (maxPkt=3) — NOT the config channel |
+
+**HID routing confirmed:** `get_xreal_usb_handle` unconditionally stores `1` to offset `0x17` of the handle struct → XReal One Pro always uses the HID path, never the TCP pilot path. TCP pilot is a fallback only used on connection error.
+
+### HID frame format (RE'd from `cmd_build_sdk` at 0xa9ec4)
+
+```
+Offset  Size  Field
+[0]     1     Report ID = 0xfd
+[1..4]  4     CRC32 LE — init = ~innerLen & 0xff, poly 0xEDB88320, no final XOR
+               CRC range: bytes [6 .. totalLen] inclusive (includes 1 trailing zero byte
+               beyond the frame — allocate totalLen+1 scratch, return copyOf(totalLen))
+[5..6]  2     innerLen LE = totalLen - 5 = 17 + payload.size
+               (NOT totalLen; NOT cmdType — common RE mistake)
+[7..14] 8     zeros
+[15..16] 2    msgId LE  (0xD2 = GET, 0xD3 = SET — no separate cmdType field)
+[17..21] 5    zeros
+[22+]   N     payload
 ```
 
-**HandJointID enum — 23 joints tracked:**
-Wrist, Palm, ThumbMetacarpal, ThumbProximal, ThumbDistal, ThumbTip,
-IndexProximal, IndexMiddle, IndexDistal, IndexTip,
-MiddleProximal, MiddleMiddle, MiddleDistal, MiddleTip,
-RingProximal, RingMiddle, RingDistal, RingTip,
-PinkyMetacarpal, PinkyProximal, PinkyMiddle, PinkyDistal, PinkyTip
+**There is no `cmdType` field.** The native code passes `w3=4` (payload size, not cmdType) to `cmd_build_sdk`. SET vs GET is distinguished entirely by msgId.
 
-**HandGesture enum — 6 recognized poses** (exact names TBD from API reference; confirmed types include):
-- Pinch/Select — index + thumb contact (any other finger pose counts)
-- System gesture — hold 1.2 s to invoke home menu
-- Open palm, thumbs-up, grab, and others (confirm from full enum)
+### UsbConfigList — field order and delta format
 
-**XREAL SDK 3.x interaction model (Unity):**
-- `Poke Interactor` — index fingertip-driven contact interaction
-- `Near-Far Interactor` — seamless close/distant interaction transitions
-- `Teleport Interactor` — far-field / indirect input
+Fields (order from `UsbConfigList.java`): `ncm`, `ecm`, `uac`, `hid_ctrl`, `mtp`, `mass_storage`, `uvc0`, `uvc1`, `enable`
 
-**XRI integration:** Edit > Project Settings > XR Plug-in Management > XREAL, set Input source = Hands
+**Delta format:** `0` = leave unchanged, `1` = set. Control Glasses (`XREALManager.java`) sends:
+- `uvc0 = 1`, `enable = 1`; all other fields = 0 (ncm/ecm already on, others not needed)
+- `uvc1` is **never set** by Control Glasses
+
+### SET payload — confirmed 4-byte bitmask
+
+`NRBSPSetUsbConfigAll` (0xbb498) sends **4 bytes** to the glasses: uint32 LE bitmask with UsbConfigList fields as bits: ncm(0), ecm(1), uac(2), hid_ctrl(3), mtp(4), mass_storage(5), uvc0(6), uvc1(7), enable(8). **Confirmed by Frida**: Control Glasses sends `uvc0=1, enable=1` → `0x140` → LE bytes `40 01 00 00`. `GlassesUvcEnabler` sends this exact payload.
+
+### Pilot daemon TCP path (secondary)
+
+- Accessible at `169.254.1.1:50180` via USB NCM (kernel-level Ethernet, no app USB permission needed)
+- Glasses present as `eth1` on Pixel with IP `169.254.1.10/24`; glasses IP = `169.254.1.1`
+- TCP path sends the **same HID-format frames** via `sendto()` — `PilotProtocol.kt`'s 0xAA-prefix format (`cmd_build_imu`) is for a different message class, not USB config
+- TCP path is only needed if HID bulkTransfer fails (e.g., USB permission issues)
+
+### Key function addresses in libnr_glasses_api.so
+
+| Function | Address | Notes |
+|---|---|---|
+| `send_xreal_usb_msg_timeout` | 0xa684c | Routes to HID or TCP based on handle flag |
+| `cmd_build_sdk` | 0xa9ec4 | Builds HID frames (report=0xfd) |
+| `cmd_build_imu` | 0xa9fc8 | Builds IMU/pilot frames (STX=0xAA) |
+| `get_xreal_usb_handle` | ~0xacf14 | Sets routing flag=1 (HID) at handle+0x17 |
+| `NRBSPGetUsbConfigAll` | 0xbbe54 | msgId=0xD2 GET |
+| `NRBSPSetUsbConfigAll` | 0xbb498 | msgId=0xD3, payload_size=4 |
+| `NRBSPSetUsbConfig` | 0xba978 | Per-field SET, also payload_size=4 |
+| `get_socket_connection` | 0xad85c | TCP to 169.254.1.1:50180 |
+
+### Current status
+
+#### Key hardware findings (from live testing 2026-06-04)
+
+**UVC is NOT persistent** — glasses reset to non-UVC config on every power cycle. CG re-enables it fresh on each reconnect (~2 seconds after initial attach).
+
+**Correct USB interface map (from UsbHostManager logs):**
+- Interface 0: HID init (ep_01 OUT/ep_81 IN, maxPkt=1024) — init messages (HOST_TYPE, SDK_VERSION)
+- Interface 8: HID config (ep_05 OUT/ep_88 IN, **maxPkt=3**) — intended for GET/SET but 3-byte limit prevents our frames
+- Interface 9: UVC VideoControl (class=14, subclass=1) — present only when UVC active, no endpoints
+- Interface 10: UVC VideoStreaming "Video Streaming 0" (class=14, subclass=2) — bulk IN ep 0x89 (address=137), maxPkt=512 — **this is what to claim for camera frames**
+
+**How CG enables UVC:**
+1. Glasses attach (no UVC, 8 interfaces). CG gets USB_DEVICE_ATTACHED.
+2. CG sends HOST_TYPE=2 + SDK_VERSION to interface 0 (correct channel, maxPkt=1024).
+3. CG reads current USB config via GET (0xD2), then sends SET (0xD3) with 4-byte payload.
+4. ~2 seconds after initial attach: glasses re-enumerate WITH UVC (interfaces 9+10 appear).
+
+**Correct package name:** `com.xreal.glassescontrol.store` (not `ai.nreal.controlglasses`). Use this for permission clearing via adb.
+
+**4-byte payload — CONFIRMED `0x140`:**
+Frida hook on `NRBSPSetUsbConfigAll` in Control Glasses confirms: `uvc0=1, enable=1` → `0x140` → LE bytes `40 01 00 00`. Prior "no re-enumeration" results were a timing problem (SET was arriving ~5.3 seconds after USB permission grant), not a payload problem. See "Timing fix" below.
+
+**Interface 8 confirmed as Consumer Control HID — not the config channel:**
+- EP0 control transfer (SET_REPORT): STALL (-1) immediately
+- Bulk transfer to ep_05: always times out — maxPkt=3 is interrupt HID, not bulk
+- **All GET+SET config commands go via interface 0** (same ep_01/ep_81 channel as HOST_TYPE/SDK_VERSION). `GlassesUvcEnabler` was updated — all dead iface-8 paths removed.
+
+**send_xreal_usb_msg signature (confirmed from 0xa8608):**
+`send_xreal_usb_msg(handle, msgId, JNIEnv*, payload_size, x4, x5, x6, usbConfigList_jobject)`
+The "payload" argument is JNIEnv* — packing happens INSIDE the function via JNI GetIntField on the jobject.
+
+**Next step:**
+Fast-path test: plug glasses after xrdroiddesk already has VID/PID permission (no reinstall between plugs). Should see "already have permission — launching HID enableUvc() immediately" → HOST_TYPE at ~50ms → MCU enters config mode → GET returns real config → SET → UVC re-enum → camera opens.
+
+**HOST_TYPE values:**
+- HOST_TYPE=1: Display stays on, SET command does NOT trigger re-enumeration
+- HOST_TYPE=2: Display goes dark (SDK mode), correct value for CG
+
+**Fallback approach (proven working):** Let CG run to enable UVC, then take over via USB Host. Workflow: `adb shell am force-stop com.xreal.glassescontrol.store` after UVC appears → replug to clear permissions → pick xrdroiddesk from chooser.
+
+#### Key findings from live testing 2026-06-18
+
+**CG auto-dismiss working:** `dismissCgUsbDialog()` confirmed firing at +310–418ms after attach, preventing CG from being set as preferred handler. The `usbSessionActive` flag (set on non-UVC attach, cleared on camera open or detach) keeps dismissal armed through the full USB lifecycle — not just during the narrow permission-dialog window.
+
+**TCP path definitively cannot trigger re-enum on fresh connect:** Confirmed across all test runs. TCP 0x26 pings always return heartbeats (msgId=0x1). TCP SET returns heartbeat. No re-enum ever observed from TCP alone without prior CG HID init.
+
+**MCU config window is shorter than 242ms:** Our HID HOST_TYPE=2 arrives at +242ms after attach (via dialog path) and the MCU still returns only heartbeats to 0x26 pings. CG likely receives auto-grant (sole app with manifest USB_DEVICE_ATTACHED filter for VID/PID) and sends HID HOST_TYPE within ~100ms — inside the MCU's config window.
+
+**USB permission cleared on reinstall:** Android USB permissions are stored per-app-per-VID/PID. Installing a new APK (`adb install -r`) clears the stored permission, forcing a fresh dialog on next plug-in. For production users this only happens once (first install). During development, reinstalling always requires one dialog plug before the fast path activates.
+
+**Fast path implemented (2026-06-18):** When `usbManager.hasPermission(device)` = true on non-UVC attach, the service skips the permission dialog and TCP early path entirely, launching `enableUvc()` (HID bulk) immediately. HOST_TYPE=2 should arrive within ~50ms of attach — well inside the MCU's config window. Triggered on second plug-in (first plug establishes the permission; subsequent plugs use fast path).
+
+**Interface 8 HID descriptor captured:**
+`05 0c 09 01 a1 01 85 01 15 00 25 01 75 01 95 01 09 e9 81 02 ... c0`
+Usage page 0x0C = Consumer Device. Confirms this is Consumer Control (volume, play/pause, etc.), NOT a USB config channel. All config commands (HOST_TYPE, SDK_VERSION, 0x26, GET, SET) go via interface 0 (ep_01 OUT / ep_81 IN, maxPkt=1024).
+
+**Retry loop fix (2026-06-18):** `openCamera()` on a non-UVC device now always returns immediately (no 3s retry scheduled). The `hidEnablePending` flag prevents duplicate HID enable launches. `tryConnectCamera()` also short-circuits when `hidEnablePending=true`. This eliminates the infinite retry loop that was firing every 3 seconds and interfering with the HID enable coroutine.
+
+**Current autonomous flow (fast path — permission already granted):**
+1. Non-UVC device attaches → `hasPermission()=true` → launch HID `enableUvc()` immediately (~0ms)
+2. HOST_TYPE=2 + SDK_VERSION + 0x26 pings via USB bulk on iface 0 (~50ms)
+3. If MCU enters config mode → GET (real config, innerLen>17) + SET (0x140) → glasses re-enumerate with UVC in ~2s
+4. UVC device attaches → `hasPermission(UVC device)=true` (same VID/PID) → `openCamera()` directly
+5. Camera opens → MediaPipe MJPEG frames → hand tracking active
+
+**Current autonomous flow (slow path — first plug after install/reinstall):**
+1. Non-UVC device attaches → `hasPermission()=false` → permission dialog + TCP early path
+2. Auto-tap dialog at ~+179ms → permission confirmed at ~+229ms → `openCamera()` fails (no UVC)
+3. `openCamera()` launches HID `enableUvc()` → HOST_TYPE arrives at ~+242ms
+4. MCU config window likely already closed → only heartbeats → `enableUvc()` returns false
+5. Permission is now stored for VID/PID → next plug takes fast path
+
+Frame format bugs in `GlassesUvcEnabler.buildHidFrame` (5 confirmed, all fixed):
+1. ✅ frame[5] = `innerLen & 0xFF` (was: `totalLen`)
+2. ✅ frame[6] = `innerLen shr 8` = 0 (was: cmdType)
+3. ✅ `cmdType` parameter removed (not in native frame)
+4. ✅ CRC init = `~innerLen & 0xff` (was: `~totalLen`)
+5. ✅ CRC range = `innerLen` bytes from offset 6, includes trailing zero (was: 1 byte short)
+
+**Timing fix (2026-06-05) — SET now reaches glasses within ~500ms of permission grant:**
+Previous attempts sent SET ~5.3 seconds after permission, likely past the glasses' config-change window. Root causes and fixes in `GlassesUvcEnabler`:
+- `HID_POST_INIT_DELAY_MS`: 2500ms → 200ms (MCU ACKs init in ~12ms; 200ms is ample)
+- Removed iface-8 HOST_TYPE attempt from `claimAndSendHidInit()` (was always timing out at 1000ms)
+- `sendUsbConfigViaHid()` simplified to iface-0 GET+SET only — the two failing paths (EP0 ctrl on iface-8, bulk to ep_05) added ~2s of dead time and are now gone
+- `HID_RESPONSE_TIMEOUT_MS`: 3000ms → 500ms
+
+**"Always" greyed out in USB chooser — permanent on Android 16 (Pixel 10 Pro):**
+Composite USB devices detected as audio headsets (`is_headset=true`) cannot be set as the "always" handler when multiple apps compete. "Just once" is the only option regardless of how many competing apps are cleared. xrdroiddesk handles this via `requestPermission()` in `GrantUsbPermissionActivity` and `MainActivity` — the permission dialog fires on each plug-in.
+
+**Requirements state logger (`MainActivity.logRequirementsState`):**
+Logs and displays state of all six prerequisites on every app event (startup, each button press, USB attach, permission result). Filter logcat by tag `Requirements` to see the full sequence. Each line: `a11y_enabled`, `a11y_running`, `usb_found`, `usb_perm`, `uvc_active`, `pending_device`. The phone screen also shows a live summary in `tvStatus`.
+
+#### Key findings from live testing 2026-06-19
+
+**Full autonomous USB permission flow confirmed working:**
+
+Complete zero-interaction flow on plug-in (after one-time CAMERA permission grant):
+1. Non-UVC attach → CG permission dialog → auto-Allow → non-UVC chooser → auto-select Control Glasses
+2. CG enables UVC via HID → glasses re-enumerate with UVC interfaces
+3. UVC attach → CG UVC permission dialog → auto-Allow (+256ms)
+4. GrantUsbPermissionActivity launched (+326ms) → `requestPermission()` → xrdroiddesk USB dialog
+5. xrdroiddesk permission dialog → auto-Allow (+820ms from UVC attach)
+6. `cam.open()` → SUCCESS in 4ms
+
+**Android 16 CAMERA permission requirement for UVC devices:**
+`UsbUserPermissionManager` silently blocks USB `requestPermission()` for UVC devices if the requesting app lacks `android.permission.CAMERA`. This is new in Android 16 — prior versions did not require CAMERA for USB Host UVC access. Fix: declare `android.permission.CAMERA` in manifest and request at runtime in `MainActivity`. NOTE: The prior statement "no `CAMERA` permission needed (USB Host path bypasses Camera2)" is incorrect for Android 16 targets.
+
+**Chooser session memory:** Selecting an app from the USB chooser with "Just once" causes Android to auto-launch that app for subsequent same-VID/PID attaches during the session (no new chooser shown). For the UVC re-enum, CG is auto-launched without a chooser — so xrdroiddesk must use explicit `requestPermission()` via `GrantUsbPermissionActivity`, not rely on a chooser.
+
+**Non-UVC chooser must select Control Glasses (not Cancel):** Tapping "Don't allow" / Cancel on the non-UVC USB chooser prevents Android from showing any chooser for subsequent same-VID/PID attaches (including the UVC re-enum). Must select Control Glasses to keep Android's per-session chooser state open.
+
+**Double-tap issue on chooser (minor):** The non-UVC chooser handler fires 4–6 times on one dialog due to multiple accessibility events for the same UI state. Current code is idempotent (selecting CG multiple times is harmless) — worth debouncing in a future cleanup.
+
+#### Key findings from community feedback 2026-07-01
+
+**Android 16 rapid Pause/Resume cycle — confirmed by another developer (Unity + NRSDK, One Pro + Eye):**
+On Android 16, Control Glasses aggressively competes for USB intents, causing a rapid Pause→Resume lifecycle on any app that also handles USB_DEVICE_ATTACHED for the same VID/PID. Their symptom: NRSDK camera plugin crashes (`Plugin Start failed: retcode=1`) because the SDK starts and stops the camera simultaneously. Their fix: revoke Camera + Mic from CG, add 1.5s startup delay.
+
+**What applies to our project (USB Host path, not Camera2):**
+
+- The Pause/Resume cycle is real and hardware-level — not NRSDK-specific. Our AccessibilityService doesn't have an `onPause`, so lifecycle disruption is less severe, but the USB stack instability window is the same ~1.5s they observed. This confirms our retry logic and delay tuning are correctly scoped.
+- **Revoking Camera permission from CG** (`adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA`) does not affect our UVC path — we use USB Host, not Camera2. CG's HID enable sequence (HOST_TYPE + GET + SET) uses USB Host permission, not Camera. Revoking Camera may reduce CG's lifecycle aggression during development by preventing it from starting its own camera pipeline. Worth trying as a dev environment setup step.
+- **`openCamera()` timing**: calling it immediately on UVC_DEVICE_ATTACHED may hit the USB stack before it stabilizes (~1.5s window). Current retry logic absorbs this, but an explicit 200–500ms delay before `cam.open()` in the UVC attach path could reduce intermittent failures on first open.
+- Their Camera/Mic revoke does NOT replace the need for CG to have USB Host permission — CG must retain USB Host access to act as Acceptor and send the HID UVC-enable sequence.
+
+**Dev environment tip (reduces CG interference during testing):**
+```bash
+# Revoke Camera from CG — reduces Pause/Resume aggression, no effect on HID/UVC enable
+adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
+# Restore when done testing
+adb shell pm grant com.xreal.glassescontrol.store android.permission.CAMERA
+```
+
+#### Key findings from live testing 2026-07-24
+
+**Cursor overlay on secondary display — must use `createWindowContext`, not `createDisplayContext`:**
+`service.createDisplayContext(display).getSystemService(WindowManager::class.java)` has no accessibility token → `addView()` fails with "token null is not valid; is your activity running?" every frame. Fix: use `service.createWindowContext(display, TYPE_ACCESSIBILITY_OVERLAY, null)` (API 30+) which creates a window context with the correct token for the overlay type and display. `CursorOverlay` now uses this with a `Build.VERSION.SDK_INT >= R` guard.
+
+**Cursor lag — stale handler posts cause freeze-then-snap:**
+Each MediaPipe frame called `handler.post { wm.updateViewLayout(...) }`. When the main thread was briefly busy (IPC to system server, accessibility event), posts queued up. On resume, stale positions fired in sequence — cursor appeared frozen then snapped. Fix: store latest position in `@Volatile` fields + use a single named `Runnable` with `handler.removeCallbacks(applyUpdate)` before each `handler.post(applyUpdate)`. Only the latest position ever reaches `WindowManager`.
+
+**HID retry loop bug — `uvcEnableFailed` flag needed:**
+After `enableUvc()` returned false (MCU window missed), `hidEnablePending` was cleared in the `finally` block. The 3s retry in `tryConnectCamera()` then saw `hidEnablePending=false`, called `armNonUvcWithPerm()` again → `enableUvc()` again → infinite loop. Fix: `UsbSetupAutomator.uvcEnableFailed` flag set when `enableUvc()` returns false; `tryConnectCamera()` returns early (no retry scheduled) when set; cleared on `onDeviceAttached()` / `onDeviceDetached()` / `reset()`.
+
+**HOST_TYPE=1 restores display after failed enableUvc():**
+`enableUvc()` sends HOST_TYPE=2 (SDK mode) which darkens the glasses display. If the MCU config window is missed and SET is never sent, the display stays dark. Fix: `GlassesUvcEnabler.enableUvc()` sends HOST_TYPE=1 (display mode) before returning false, restoring brightness.
+
+**Cursor landmark — WRIST preferred over INDEX_MCP:**
+`INDEX_MCP` (base knuckle of index finger) shifts when fingers curl during pinch, causing the cursor to jump at click time. `WRIST` is unaffected by finger state — cursor stays stable during pinch. `LandmarkToHandData` now uses `imageLandmarks[WRIST]` for `pointerPose`.
+
+**Pinch threshold — 0.6f is the working value for this camera:**
+`MAX_PINCH_DIST_M = 0.08f`. Threshold 0.6 → fires at dist < 3.2cm. Threshold 0.65f and 0.75f were both too high to trigger with MediaPipe world landmark accuracy on the XReal One Pro UVC stream. Keep at 0.6f. The rising-edge `pinchActive` flag in `GestureRecognizer` already prevents repeat-firing within a single pinch hold.
+
+**Current working state (2026-07-24):**
+- Cursor visible on glasses Android Desktop ✅
+- Cursor tracks wrist position ✅
+- Pinch fires clicks ✅ (threshold 0.6f)
+- No cursor freeze/snap lag ✅
+- HID retry loop stopped after MCU window miss ✅
+- Display restores after failed enableUvc() ✅
+- Branch: `feature/uvc-hand-tracking`, commit `7320df2`
 
 ## Cross-Platform Hand Gesture Abstraction
 
@@ -137,38 +363,47 @@ Higher-level interaction framework; XREAL SDK explicitly supports MRTK3 integrat
 
 ### Abstraction recommendation for this project
 
-This project uses **native Kotlin + NRSDK** (not Unity), so the relevant layers are:
+This project uses **native Kotlin + UVC + MediaPipe** (not Unity, not NRSDK). The relevant layers are:
 
 ```
-NRSDK (XReal-specific, native Android)
+UVC camera (XReal-specific, via USB Host API)
         |
-GestureRecognizer (KMP shared module)  ← raw joints → named gestures
+XRealGlassesCamera + HandLandmarkerHelper  ← MJPEG frames → HandData
         |
-GestureActionMapper (KMP shared module) ← named gestures → abstract actions
+GestureRecognizer  ← raw HandData → named gestures
+        |
+GestureActionDispatcher  ← named gestures → DesktopAction
         |
 DesktopController (platform-specific)  ← Android AccessibilityService / macOS CGEvent
 ```
 
-To support other glasses in future: swap NRSDK for OpenXR via the Android NDK OpenXR loader — the shared KMP gesture logic above it stays untouched.
+To support other glasses in future: replace `XRealGlassesCamera` (the only XReal-specific class) with a different camera source. Everything above it is camera-agnostic.
 
-## Architecture (planned)
+## Architecture (implemented)
 
 ```
-XReal Glasses
+XReal One Pro glasses — USB-C, UVC mode on
         |
         v
-NRSDKHandTracker (Android, Kotlin)
-        |  joint poses + pinch data
+XRealGlassesCamera          UVC bulk frames (MJPEG)
+        |
         v
-GestureRecognizer (KMP shared module)
-        |  named gestures: Pinch, Swipe, Palm, Fist, …
+HandLandmarkerHelper        MediaPipe 21-joint hand landmarker
+        |                   → HandData(isTracked, pinchStrength, pointerPose)
         v
-GestureActionMapper (KMP shared module)
-        |  abstract actions: Click, RightClick, Scroll, Drag, …
+HandTrackingPipeline        orchestrates camera + landmarker
+        |
         v
-DesktopController
-  ├── AndroidDesktopController → AccessibilityService
-  └── MacDesktopController (stretch) → CGEvent / AXUIElement
+GestureRecognizer           Pinch / SwipeLeft / SwipeRight
+        |
+        v
+GestureActionDispatcher     DesktopAction.Click / …
+        |
+        v
+AccessibilityDesktopController
+        |
+        v
+GestureAccessibilityService.dispatchGesture()
 ```
 
 ## Gesture → Desktop Action Mapping (initial targets)
@@ -203,11 +438,12 @@ The glasses connect to the Mac via USB-C; a native Mac companion app (Swift/Swif
 
 XREAL SDK 3.x is Unity-only, but `AccessibilityService` is a native Android component that must be declared in the manifest and run as a persistent background service. Unity controls the process lifecycle and manifest, making a well-behaved Android background service very difficult. Unity is the wrong tool for a system-level input-injection app.
 
-### Chosen approach: Native Android (Kotlin + NRSDK) → Kotlin Multiplatform for Mac
+### Chosen approach: Native Android (Kotlin + UVC + MediaPipe) → Kotlin Multiplatform for Mac
 
 **Phase 1 — Native Android**
 - Language: Kotlin
-- XReal SDK: NRSDK (native Android, legacy but fully functional)
+- Camera input: Android USB Host API → XReal UVC camera (no proprietary SDK)
+- Hand tracking: MediaPipe Tasks Vision (`HandLandmarker`, 21 joints)
 - Desktop control: `AccessibilityService` (natural fit in native Kotlin)
 - Build: Gradle, Android Studio
 
@@ -221,15 +457,17 @@ Each platform keeps its own input injection:
 
 ```
 shared/ (KMP module — Kotlin)
-  GestureRecognizer       ← raw joint data → named gestures
-  GestureActionMapper     ← named gestures → abstract desktop actions
+  GestureRecognizer       ← HandData → named gestures
+  GestureActionDispatcher ← named gestures → abstract desktop actions
 
 androidApp/ (Kotlin)
-  NRSDKHandTracker        ← NRSDK → joint data → shared module
-  AndroidDesktopController← AccessibilityService input injection
+  XRealGlassesCamera      ← USB Host API → UVC frames
+  HandLandmarkerHelper    ← MediaPipe → HandData
+  HandTrackingPipeline    ← orchestrates above → GestureRecognizer
+  AccessibilityDesktopController ← AccessibilityService input injection
 
 macosApp/ (Swift + KMP interop)
-  XRealHandTracker        ← NRSDK/OpenXR → joint data → shared module
+  XRealUvcCamera          ← IOKit USB → UVC frames
   MacDesktopController    ← CGEvent / AXUIElement input injection
 ```
 
@@ -242,8 +480,18 @@ macosApp/ (Swift + KMP interop)
 
 ## Build Setup
 
-- **Phase 1 — Android app**: Kotlin, Gradle, Android Studio, NRSDK
+- **Phase 1 — Android app**: Kotlin, Gradle, Android Studio, MediaPipe Tasks Vision, Android USB Host API
 - **Phase 2 — KMP shared module + macOS companion**: Kotlin Multiplatform, Swift/SwiftUI, Xcode
+
+### Model file
+
+MediaPipe requires `hand_landmarker.task` (~6 MB) in `app/src/main/assets/`. Not committed to git. Download once:
+
+```bash
+make download-model
+```
+
+(Makefile target fetches from `storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task`)
 
 ## Git Workflow
 
@@ -373,12 +621,16 @@ Android Studio Device Mirroring (Hedgehog+) streams the Pixel screen directly in
 
 ## Development Notes
 
-- XReal One Pro requires the phone to be connected via USB-C; test on physical device only (no emulator for XR input)
-- On connect, Android prompts Mirror or Desktop — the user must select **Desktop mode**; this app targets that mode exclusively
+- XReal One Pro requires USB-C connection to phone; test on physical device only (no emulator for UVC input)
+- On connect, Android prompts Mirror or Desktop — user must select **Desktop mode**; this app targets that mode exclusively
 - Android Desktop mode on Pixel 10 Pro may need developer options enabled (Settings > Developer options > Force desktop mode)
 - In Desktop mode, the glasses display an independent windowed environment separate from the phone's touchscreen
 - AccessibilityService must be declared in manifest and enabled by user in Settings > Accessibility
+- **Control Glasses app must be installed** and UVC mode toggled on before camera access works
+- First launch triggers a one-time USB permission dialog for the XReal device (VID=0x3318, PID=0x0436)
+- **USB permission prerequisite**: Control Glasses (`com.xreal.glassescontrol.store`) is registered as the default/preferred USB handler for VID=13080/PID=1078. Android auto-denies `requestPermission()` calls from any other app while a preferred handler exists. **One-time fix**: Settings → Apps → "Glasses Control" → Open by default → Clear defaults → unplug and replug glasses → pick xrdroiddesk from the chooser (tap "Just once"). After this, xrdroiddesk has USB permission and Control Glasses keeps working for display. Diagnose with `make usb-permission-status`. Note: `adb shell pm clear com.xreal.glassescontrol.store` clears app data but does NOT clear the system-level USB default handler — use the Settings UI path instead. **"Always" is permanently greyed out on Android 16 (Pixel 10 Pro)**: composite USB devices detected as audio headsets cannot use "always" with multiple competing handlers — "Just once" is the maximum. xrdroiddesk calls `requestPermission()` on each plug-in to show the dialog regardless.
 - Hand tracking accuracy and latency will be a primary UX concern
+- The glasses camera points forward (eye-level view of user's hands) — ideal geometry for gesture detection
 
 ## Useful References
 
@@ -399,3 +651,13 @@ Android Studio Device Mirroring (Hedgehog+) streams the Pixel screen directly in
 - Android Desktop mode (taskbar/freeform): introduced in Android 12L, refined in 14+
 - macOS CGEvent reference: https://developer.apple.com/documentation/coregraphics/cgevent
 - macOS Accessibility API: https://developer.apple.com/documentation/applicationservices/accessibility_application_programming_interface
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

@@ -49,6 +49,14 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            // MediaPipe .so is not 16KB page-aligned; extract to disk on install
+            // instead of mmap-ing directly from the APK (which needs alignment).
+            useLegacyPackaging = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -71,13 +79,13 @@ ktlint {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-
-    // NRSDK — add once AAR is downloaded from developer.xreal.com/download
-    // implementation(files("libs/nrsdk.aar"))
+    implementation(libs.mediapipe.tasks.vision)
+    implementation(libs.coroutines.android)
 
     testImplementation(libs.junit5.api)
     testRuntimeOnly(libs.junit5.engine)
     testImplementation(libs.mockk)
+    testImplementation(libs.coroutines.test)
 
     androidTestImplementation(libs.mockk.android)
 }
