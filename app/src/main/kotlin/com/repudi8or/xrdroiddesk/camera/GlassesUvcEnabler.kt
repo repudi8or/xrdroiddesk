@@ -193,8 +193,9 @@ class GlassesUvcEnabler(
             }
 
             if (!gotConfig) {
-                // HOST_TYPE arrived too late (MCU config window ~100ms missed — slow path).
-                // USB permission is now stored; next plug will use fast path and succeed.
+                // HOST_TYPE=2 darkened the display. Restore it by sending HOST_TYPE=1 (display mode).
+                val restoreFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(1, 0, 0, 0))
+                conn.bulkTransfer(epOut, restoreFrame, restoreFrame.size, HID_TRANSFER_TIMEOUT_MS)
                 Log.w(TAG, "═══ enableUvc END result=false (GET heartbeats — MCU config window missed; retry on next plug) ═══")
                 return@withContext false
             }

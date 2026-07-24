@@ -7,7 +7,7 @@ import kotlin.math.sqrt
 internal object LandmarkIndex {
     const val WRIST = 0
     const val THUMB_TIP = 4
-    const val INDEX_MCP = 5 // metacarpophalangeal joint — stable pointer reference
+    const val INDEX_MCP = 5
     const val INDEX_TIP = 8
 }
 
@@ -31,7 +31,7 @@ internal fun landmarkToHandData(
         )
     val pinch = (1f - dist / MAX_PINCH_DIST_M).coerceIn(0f, 1f)
 
-    val pointer = imageLandmarks[LandmarkIndex.INDEX_MCP]
+    val pointer = imageLandmarks[LandmarkIndex.WRIST]
     return HandData(
         isTracked = true,
         pinchStrength = pinch,

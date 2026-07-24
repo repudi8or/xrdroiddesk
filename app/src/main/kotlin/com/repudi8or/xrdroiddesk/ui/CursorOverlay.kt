@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
@@ -32,6 +33,33 @@ class CursorOverlay(
 
     @Volatile private var added = false
 
+    @Volatile private var pendingNx = 0.5f
+
+    @Volatile private var pendingNy = 0.5f
+
+    @Volatile private var pendingTracked = false
+
+    private val applyUpdate =
+        Runnable {
+            params.x = (pendingNx * displayW).toInt() - sizePx / 2
+            params.y = (pendingNy * displayH).toInt() - sizePx / 2
+            if (!added) {
+                try {
+                    wm.addView(view, params)
+                    added = true
+                } catch (e: Exception) {
+                    android.util.Log.w(TAG, "addView failed: ${e.message}")
+                }
+            } else {
+                try {
+                    wm.updateViewLayout(view, params)
+                } catch (e: Exception) {
+                    android.util.Log.w(TAG, "updateViewLayout failed: ${e.message}")
+                }
+                view.setTracked(pendingTracked)
+            }
+        }
+
     init {
         val dm = service.getSystemService(android.hardware.display.DisplayManager::class.java)
         val display = dm.getDisplay(displayId) ?: dm.getDisplay(android.view.Display.DEFAULT_DISPLAY)!!
@@ -44,9 +72,20 @@ class CursorOverlay(
         displayH = metrics.heightPixels
         sizePx = (CURSOR_DP * metrics.density).toInt().coerceAtLeast(32)
 
-        val displayCtx = service.createDisplayContext(display)
-        wm = displayCtx.getSystemService(WindowManager::class.java)
-        view = CursorView(displayCtx)
+        // createWindowContext gives TYPE_ACCESSIBILITY_OVERLAY the right token on the target
+        // display. createDisplayContext() has no window token → addView() fails with token null.
+        val windowCtx =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                service.createWindowContext(
+                    display,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                    null,
+                )
+            } else {
+                service.createDisplayContext(display)
+            }
+        wm = windowCtx.getSystemService(WindowManager::class.java)
+        view = CursorView(windowCtx)
 
         params =
             WindowManager
@@ -71,27 +110,11 @@ class CursorOverlay(
         ny: Float,
         isTracked: Boolean,
     ) {
-        handler.post {
-            params.x = (nx * displayW).toInt() - sizePx / 2
-            params.y = (ny * displayH).toInt() - sizePx / 2
-            if (!added) {
-                if (isTracked) {
-                    try {
-                        wm.addView(view, params)
-                        added = true
-                    } catch (e: Exception) {
-                        android.util.Log.w(TAG, "addView failed: ${e.message}")
-                    }
-                }
-            } else {
-                try {
-                    wm.updateViewLayout(view, params)
-                } catch (e: Exception) {
-                    android.util.Log.w(TAG, "updateViewLayout failed: ${e.message}")
-                }
-                view.setTracked(isTracked)
-            }
-        }
+        pendingNx = nx
+        pendingNy = ny
+        pendingTracked = isTracked
+        handler.removeCallbacks(applyUpdate)
+        handler.post(applyUpdate)
     }
 
     fun close() {

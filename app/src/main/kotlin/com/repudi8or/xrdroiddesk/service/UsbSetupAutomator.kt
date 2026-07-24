@@ -33,6 +33,8 @@ class UsbSetupAutomator(
         private set
     var hidEnablePending = false
         private set
+    var uvcEnableFailed = false
+        private set
     var uvcPhaseActive = false
         private set
     var selfPermPending = false
@@ -67,6 +69,7 @@ class UsbSetupAutomator(
         skipActivityLaunch: Boolean = false,
     ) {
         lastKnownDevice = device
+        uvcEnableFailed = false
         if (!usbSessionActive) usbAttachTimestampMs = System.currentTimeMillis()
         usbSessionActive = true
         // Record manifest Activity launch BEFORE selfPermPending check so the coroutine
@@ -137,6 +140,7 @@ class UsbSetupAutomator(
         cgAllowPhase = false
         uvcPhaseActive = false
         hidEnablePending = false
+        uvcEnableFailed = false
         tcpEnablePending = false
         selfPermPending = false
         manifestActivityStarted = false
@@ -272,6 +276,7 @@ class UsbSetupAutomator(
         cgAllowPhase = false
         uvcPhaseActive = false
         hidEnablePending = false
+        uvcEnableFailed = false
         tcpEnablePending = false
         selfPermPending = false
         manifestActivityStarted = false
@@ -311,6 +316,7 @@ class UsbSetupAutomator(
                 val ok = enabler.enableUvc()
                 enabler.release()
                 uiLog("HID enableUvc: ${if (ok) "✓ awaiting UVC re-enum" else "✗ MCU window missed"}")
+                if (!ok) uvcEnableFailed = true
             } finally {
                 hidEnablePending = false
             }

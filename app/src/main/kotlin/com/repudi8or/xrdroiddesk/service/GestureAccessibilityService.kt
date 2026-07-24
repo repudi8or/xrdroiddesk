@@ -264,6 +264,10 @@ class GestureAccessibilityService : AccessibilityService() {
         if (!uvcActive) {
             retryJob?.cancel()
             retryJob = null
+            if (usbSetup.uvcEnableFailed) {
+                Log.i(TAG, "tryConnectCamera: non-UVC, HID already failed — waiting for replug")
+                return
+            }
             val usbMan = getSystemService(Context.USB_SERVICE) as UsbManager
             if (usbMan.hasPermission(device)) {
                 usbSetup.armNonUvcWithPerm(device)
