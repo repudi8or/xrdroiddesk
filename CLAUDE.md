@@ -278,6 +278,35 @@ adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
 adb shell pm grant com.xreal.glassescontrol.store android.permission.CAMERA
 ```
 
+#### Key findings from live testing 2026-07-24
+
+**Cursor overlay on secondary display — must use `createWindowContext`, not `createDisplayContext`:**
+`service.createDisplayContext(display).getSystemService(WindowManager::class.java)` has no accessibility token → `addView()` fails with "token null is not valid; is your activity running?" every frame. Fix: use `service.createWindowContext(display, TYPE_ACCESSIBILITY_OVERLAY, null)` (API 30+) which creates a window context with the correct token for the overlay type and display. `CursorOverlay` now uses this with a `Build.VERSION.SDK_INT >= R` guard.
+
+**Cursor lag — stale handler posts cause freeze-then-snap:**
+Each MediaPipe frame called `handler.post { wm.updateViewLayout(...) }`. When the main thread was briefly busy (IPC to system server, accessibility event), posts queued up. On resume, stale positions fired in sequence — cursor appeared frozen then snapped. Fix: store latest position in `@Volatile` fields + use a single named `Runnable` with `handler.removeCallbacks(applyUpdate)` before each `handler.post(applyUpdate)`. Only the latest position ever reaches `WindowManager`.
+
+**HID retry loop bug — `uvcEnableFailed` flag needed:**
+After `enableUvc()` returned false (MCU window missed), `hidEnablePending` was cleared in the `finally` block. The 3s retry in `tryConnectCamera()` then saw `hidEnablePending=false`, called `armNonUvcWithPerm()` again → `enableUvc()` again → infinite loop. Fix: `UsbSetupAutomator.uvcEnableFailed` flag set when `enableUvc()` returns false; `tryConnectCamera()` returns early (no retry scheduled) when set; cleared on `onDeviceAttached()` / `onDeviceDetached()` / `reset()`.
+
+**HOST_TYPE=1 restores display after failed enableUvc():**
+`enableUvc()` sends HOST_TYPE=2 (SDK mode) which darkens the glasses display. If the MCU config window is missed and SET is never sent, the display stays dark. Fix: `GlassesUvcEnabler.enableUvc()` sends HOST_TYPE=1 (display mode) before returning false, restoring brightness.
+
+**Cursor landmark — WRIST preferred over INDEX_MCP:**
+`INDEX_MCP` (base knuckle of index finger) shifts when fingers curl during pinch, causing the cursor to jump at click time. `WRIST` is unaffected by finger state — cursor stays stable during pinch. `LandmarkToHandData` now uses `imageLandmarks[WRIST]` for `pointerPose`.
+
+**Pinch threshold — 0.6f is the working value for this camera:**
+`MAX_PINCH_DIST_M = 0.08f`. Threshold 0.6 → fires at dist < 3.2cm. Threshold 0.65f and 0.75f were both too high to trigger with MediaPipe world landmark accuracy on the XReal One Pro UVC stream. Keep at 0.6f. The rising-edge `pinchActive` flag in `GestureRecognizer` already prevents repeat-firing within a single pinch hold.
+
+**Current working state (2026-07-24):**
+- Cursor visible on glasses Android Desktop ✅
+- Cursor tracks wrist position ✅
+- Pinch fires clicks ✅ (threshold 0.6f)
+- No cursor freeze/snap lag ✅
+- HID retry loop stopped after MCU window miss ✅
+- Display restores after failed enableUvc() ✅
+- Branch: `feature/uvc-hand-tracking`, commit `7320df2`
+
 ## Cross-Platform Hand Gesture Abstraction
 
 Writing gesture code against these layers instead of XReal-proprietary APIs means the same code runs on Meta Quest, HoloLens, PICO, HTC Vive Focus, Magic Leap 2, Varjo, and any other OpenXR-conformant device.
