@@ -1,15 +1,34 @@
 JAVA_HOME  := /Applications/Android Studio.app/Contents/jbr/Contents/Home
 ANDROID_SDK := $(HOME)/Library/Android/sdk
-ADB        := $(ANDROID_SDK)/platform-tools/adb
+# Override with: make install DEVICE=192.168.1.230:35717  (or set ANDROID_SERIAL env var)
+ADB        := $(ANDROID_SDK)/platform-tools/adb $(if $(DEVICE),-s $(DEVICE),)
 EMULATOR   := $(ANDROID_SDK)/emulator/emulator
 AVD        := xrdroiddesk_desktop_api34
 APP_ID     := com.repudi8or.xrdroiddesk
 ACTIVITY   := $(APP_ID)/.MainActivity
+CG_PKG     := com.xreal.glassescontrol.store
+FRIDA_SCRIPT := frida/hook_cg_hid.js
 APK        := app/build/outputs/apk/debug/app-debug.apk
+MODEL_URL  := https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
+MODEL_DIR  := app/src/main/assets
+MODEL_FILE := $(MODEL_DIR)/hand_landmarker.task
 
 export JAVA_HOME
 
 .DEFAULT_GOAL := help
+
+# ── Setup ────────────────────────────────────────────────────────────────────
+
+.PHONY: download-model
+download-model:  ## Download MediaPipe hand_landmarker.task into assets/
+	@mkdir -p $(MODEL_DIR)
+	@if [ -f "$(MODEL_FILE)" ]; then \
+	  echo "Model already present: $(MODEL_FILE)"; \
+	else \
+	  echo "Downloading hand_landmarker.task..."; \
+	  curl -L -o "$(MODEL_FILE)" "$(MODEL_URL)"; \
+	  echo "Saved to $(MODEL_FILE)"; \
+	fi
 
 # ── Build ────────────────────────────────────────────────────────────────────
 
@@ -48,9 +67,22 @@ install: build  ## Install debug APK on connected device/emulator
 run: install  ## Install and launch MainActivity
 	$(ADB) shell am start -n $(ACTIVITY)
 
+LOG_FILE := /data/local/tmp/xr_log.txt
+LOG_TAGS  := '*:S' XRealGlassesCamera:D GestureA11yService:I GlassesUvcEnabler:I Requirements:I MainActivity:I ActivityManager:I H264FrameDecoder:W HandLandmarker:I GestureRecognizer:I GestureDispatcher:I DesktopController:I
+
 .PHONY: logcat
 logcat:  ## Stream filtered logcat for this app
 	$(ADB) logcat --pid=$$($(ADB) shell pidof -s $(APP_ID)) -v time
+
+.PHONY: log-start
+log-start:  ## Start on-device filtered log capture (survives ADB disconnect); clears previous log
+	$(ADB) shell "kill \$$(ps -A | grep logcat | grep ' 1 ' | awk '{print \$$2}') 2>/dev/null; logcat -c; rm -f $(LOG_FILE); nohup logcat -v time $(LOG_TAGS) > $(LOG_FILE) 2>&1 &"
+	@sleep 1
+	@$(ADB) shell "ps -A | grep logcat | grep ' 1 ' | awk '{print \"  logcat running: pid=\"\$$2}'"
+
+.PHONY: log-pull
+log-pull:  ## Pull the on-device log file to stdout
+	$(ADB) shell "cat $(LOG_FILE) 2>/dev/null || echo '(log file not found)'"
 
 .PHONY: devices
 devices:  ## List connected ADB devices
@@ -101,6 +133,58 @@ accessibility-check:  ## Check if GestureAccessibilityService is enabled on devi
 	@$(ADB) shell settings get secure enabled_accessibility_services \
 	  | grep --color=always xrdroiddesk \
 	  || echo "Service NOT enabled — go to Settings > Accessibility > xrdroiddesk"
+
+.PHONY: usb-permission-status
+usb-permission-status:  ## Show USB device permissions and default app for XReal glasses
+	@echo "=== Full USB permissions_manager section ==="
+	@$(ADB) shell dumpsys usb | grep -A 20 "permissions_manager"
+	@echo ""
+	@echo "=== Apps registered for XReal device (VID=13080/PID=1078) ==="
+	@$(ADB) shell dumpsys usb | grep -B 5 "vendor_id=13080" | grep "package_name" || echo "  (none)"
+	@echo ""
+	@echo "=== All USB-registered apps (wildcard / any vendor) ==="
+	@$(ADB) shell dumpsys usb | grep -B 3 "vendor_id=-1" | grep "package_name" || echo "  (none)"
+	@echo ""
+	@echo "NOTE: UIDs shown in device_permissions without grant/deny value."
+	@echo "  If hasPermission() returns false, the UID entry is likely stored as DENIED."
+	@echo "  Fix: unplug glasses → replug → pick xrdroiddesk from the USB app chooser."
+	@echo "  Do NOT tap 'Request USB Permission' in the app before seeing the chooser."
+
+# ── Frida RE ─────────────────────────────────────────────────────────────────
+
+FRIDA_SERVER_DIR := /data/local/tmp
+
+.PHONY: frida-server-push
+frida-server-push:  ## Push frida-server to device (download from releases.frida.re first)
+	@if [ -z "$(FRIDA_SERVER)" ]; then \
+	  echo "Usage: make frida-server-push FRIDA_SERVER=path/to/frida-server-arm64"; \
+	  exit 1; \
+	fi
+	$(ADB) push $(FRIDA_SERVER) $(FRIDA_SERVER_DIR)/frida-server
+	$(ADB) shell chmod +x $(FRIDA_SERVER_DIR)/frida-server
+	@echo "frida-server pushed — start with: make frida-server-start"
+
+.PHONY: frida-server-start
+frida-server-start:  ## Start frida-server on device (background, requires root or dev mode)
+	$(ADB) shell "nohup $(FRIDA_SERVER_DIR)/frida-server &"
+	@echo "frida-server started"
+
+.PHONY: frida-server-stop
+frida-server-stop:  ## Kill frida-server on device
+	$(ADB) shell "pkill frida-server || true"
+
+.PHONY: frida-hook-cg
+frida-hook-cg:  ## Hook CG USB transfers — attach to running CG process
+	@echo "Ensure glasses are NOT plugged in yet. Press Ctrl-C to stop."
+	@echo "Workflow: run this → plug glasses → watch msgId log"
+	$(ADB) shell am start -n $(CG_PKG)/.ui.main.MainActivity
+	@sleep 1
+	frida -U -n $(CG_PKG) -l $(FRIDA_SCRIPT) --no-pause
+
+.PHONY: frida-hook-cg-spawn
+frida-hook-cg-spawn:  ## Spawn CG fresh under Frida then wait for USB attach
+	@echo "Spawning CG under Frida — then plug glasses in"
+	frida -U -f $(CG_PKG) -l $(FRIDA_SCRIPT) --no-pause
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 

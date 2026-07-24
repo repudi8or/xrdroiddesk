@@ -24,7 +24,7 @@ class GestureRecognizerTest {
 
     @Test
     fun `returns Pinch when pinchStrength meets threshold`() {
-        assertEquals(Gesture.Pinch, recognizer.recognize(tracked(pinchStrength = 0.8f)))
+        assertEquals(Gesture.Pinch(x = 0f, y = 0f), recognizer.recognize(tracked(pinchStrength = 0.8f)))
     }
 
     @Test
@@ -36,7 +36,7 @@ class GestureRecognizerTest {
     fun `custom pinch threshold is respected`() {
         val strict = GestureRecognizer(GestureConfig(pinchThreshold = 0.95f))
         assertNull(strict.recognize(tracked(pinchStrength = 0.9f)))
-        assertEquals(Gesture.Pinch, strict.recognize(tracked(pinchStrength = 0.95f)))
+        assertEquals(Gesture.Pinch(x = 0f, y = 0f), strict.recognize(tracked(pinchStrength = 0.95f)))
     }
 
     // ── Swipe ─────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ class GestureRecognizerTest {
     fun `Pinch takes priority over simultaneous swipe`() {
         recognizer.recognize(tracked(pointerX = 0.0f))
         val both = tracked(pinchStrength = 0.9f, pointerX = 0.5f)
-        assertEquals(Gesture.Pinch, recognizer.recognize(both))
+        assertEquals(Gesture.Pinch(x = 0.5f, y = 0f), recognizer.recognize(both))
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
