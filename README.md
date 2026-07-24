@@ -55,21 +55,128 @@ GestureAccessibilityService + CursorOverlay
 - **Android 16 + secondary display overlays** — `TYPE_ACCESSIBILITY_OVERLAY` windows on a secondary display require `createWindowContext(display, TYPE_ACCESSIBILITY_OVERLAY, null)` (API 30+). `createDisplayContext()` has no accessibility token and silently fails.
 - **Android 16 USB Host** — `android.permission.CAMERA` is now required for USB `requestPermission()` on UVC devices (new in Android 16; previous versions did not require it).
 
-## Building
+## Building and installing
+
+### Prerequisites
+
+- **JDK 17+** — `java -version` should report 17 or higher
+- **Android SDK** — install via [Android Studio](https://developer.android.com/studio) or the standalone SDK tools; `ANDROID_HOME` must be set
+- **adb** — included with the Android SDK platform-tools; must be on your `PATH`
+- **Connected Pixel 10 Pro** with USB debugging enabled (`Settings → Developer options → USB debugging`)
+
+Verify your setup:
 
 ```bash
-# Prerequisites: Android Studio, JDK 17+, adb
+adb devices          # should list your phone as "device"
+make help            # lists all available make targets
+```
 
-# Download MediaPipe hand landmarker model (~6 MB, not committed)
+### 1. Clone and set up
+
+```bash
+git clone git@github.com:repudi8or/xrdroiddesk.git
+cd xrdroiddesk
+
+# Download the MediaPipe hand landmarker model (~6 MB, not committed to git)
 make download-model
 
-# Build and install
-make install
+# Copy local config template (Android SDK path etc.)
+cp local.properties.example local.properties
+# Edit local.properties if your sdk.dir differs from the Android Studio default
+```
 
-# Enable the accessibility service:
-# Settings → Accessibility → xrdroiddesk → Enable
+### 2. Build the APK
 
-# Connect glasses — UVC enables automatically on second plug-in
+```bash
+make build
+# Output: app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 3. Install on device
+
+```bash
+make install          # builds + installs via adb
+# or with a specific device if multiple are connected:
+make install DEVICE=192.168.x.x:PORT
+```
+
+### 4. Grant permissions
+
+After install, grant the camera permission (required on Android 16+ for USB Host UVC access):
+
+```bash
+adb shell pm grant com.repudi8or.xrdroiddesk android.permission.CAMERA
+```
+
+Or grant it through the in-app prompt when you first launch.
+
+### 5. Enable the accessibility service
+
+The service must be enabled once in Android system settings — this cannot be done via adb.
+
+**On the phone:**
+```
+Settings → Accessibility → Downloaded apps → xrdroiddesk → Enable
+```
+
+Verify it's running:
+
+```bash
+make accessibility-check
+```
+
+### 6. Install and configure Glasses Control
+
+Install [Glasses Control](https://play.google.com/store/apps/details?id=com.xreal.glassescontrol.store) from the Play Store.
+
+Enable UVC mode **once** in the app:
+```
+Glasses Control → Settings → Enable UVC mode
+```
+
+This only needs to be done once. After that, xrdroiddesk autonomously re-enables UVC on every plug-in via HID — you do not need to open Glasses Control again.
+
+### 7. Connect the glasses
+
+1. Plug XReal One Pro into the phone via USB-C
+2. Android shows a USB chooser — select **Glasses Control** (Just once)
+3. Glasses Control enables UVC (~2 seconds), glasses re-enumerate
+4. A second USB permission dialog appears — select **xrdroiddesk** (Just once)
+5. Camera opens, cursor appears on the glasses desktop
+
+> **First plug after a fresh install** — the USB permission dialog shows. Tap Allow, then unplug and replug. The second plug uses the fast path (permission already stored) and autonomous UVC enable succeeds within ~100ms.
+
+> **Desktop mode** — when prompted by Android after connecting the glasses, select **Desktop mode** (not Mirror mode). This project only targets Desktop mode.
+
+### ADB over WiFi (optional, for wireless development)
+
+```bash
+# Once, while the phone is plugged in via USB:
+make adb-wifi-enable
+
+# Then unplug and connect wirelessly:
+make adb-wifi-connect DEVICE_IP=192.168.x.x
+
+# All make targets work over WiFi from here
+make logcat          # stream filtered logs for this app
+```
+
+### Useful ADB commands
+
+```bash
+# Stream logs (filtered to this app)
+make logcat
+
+# Check accessibility service status
+make accessibility-check
+
+# Clear USB permissions (forces fresh permission dialogs)
+adb shell pm clear com.xreal.glassescontrol.store
+
+# Revoke Camera from Glasses Control (reduces lifecycle interference during dev)
+adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
+# Restore when done:
+adb shell pm grant com.xreal.glassescontrol.store android.permission.CAMERA
 ```
 
 See `Makefile` for the full list of dev commands (`make help`).
