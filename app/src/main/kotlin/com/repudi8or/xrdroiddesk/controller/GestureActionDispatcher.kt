@@ -26,9 +26,9 @@ class GestureActionDispatcher(
             }
         val msg = "gesture: $gesture → $action"
         Log.i(TAG, msg)
-        com.repudi8or.xrdroiddesk.MainActivity.instance?.runOnUiThread {
-            com.repudi8or.xrdroiddesk.MainActivity.instance
-                ?.appendLog(msg)
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            com.repudi8or.xrdroiddesk.MainActivity
+                .appendToAll(msg)
         }
         controller.perform(action)
     }

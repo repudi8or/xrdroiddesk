@@ -379,7 +379,7 @@ class GestureAccessibilityService : AccessibilityService() {
             }
         camera = cam
 
-        val pl = HandTrackingPipeline(cam, GestureRecognizer(GestureConfig(pinchThreshold = 0.15f)), dispatcher)
+        val pl = HandTrackingPipeline(cam, GestureRecognizer(GestureConfig()), dispatcher)
         pipeline = pl
 
         val pending = pendingUsbDevice

@@ -61,8 +61,16 @@ class GlassesUvcEnabler(
 
         // UsbConfigList bitmask fields (order from UsbConfigList.java):
         // ncm(0), ecm(1), uac(2), hid_ctrl(3), mtp(4), mass_storage(5), uvc0(6), uvc1(7), enable(8)
-        // OR mask to add to current config: uvc0(bit6) | enable(bit8) = 0x140
+        // OR mask for built-in stereo camera (xreal0): uvc0(bit6) | enable(bit8) = 0x140
         private const val UVC_ENABLE_MASK = 0x140
+
+        // OR mask for Eye RGB camera (xreal1): uvc1(bit7) | enable(bit8) = 0x180
+        // RE source: GlassesConnection.kt in Aloim/Xreal-One-Pro-Eye-RGB-Camera-feed-on-Android
+        private const val UVC_EYE_ENABLE_MASK = 0x180
+
+        // Post-enable HID commands for Eye RGB camera hardware
+        private const val MSG_RGB_ENABLE = 0x0068 // Enable RGB camera hardware (CMD_RW_RGB_SWITCH)
+        private const val MSG_RGB_STREAM = 0x0069 // Start RGB stream
 
         private const val HID_REPORT_ID: Byte = 0xfd.toByte()
         private const val HID_TRANSFER_TIMEOUT_MS = 1000
@@ -213,6 +221,126 @@ class GlassesUvcEnabler(
             val ok = sSent == setFrame.size
             Log.i(TAG, "═══ enableUvc END result=$ok ═══")
             ok
+        }
+
+    /**
+     * Enable the Eye RGB camera (xreal1 / uvc1) via HID USB commands.
+     *
+     * Same HOST_TYPE → SDK_VERSION → GET → SET sequence as enableUvc(), but uses
+     * UVC_EYE_ENABLE_MASK (uvc1|enable = 0x180) so the Eye camera's VideoStreaming
+     * interface appears after re-enum. Also sends RGB_ENABLE (0x68) + RGB_STREAM (0x69)
+     * post-enable to activate the Eye hardware.
+     *
+     * RE source: Aloim/Xreal-One-Pro-Eye-RGB-Camera-feed-on-Android
+     *   config.uvc1=1, config.enable=1 → OR mask = 0x180
+     */
+    suspend fun enableEyeUvc(): Boolean =
+        withContext(Dispatchers.IO) {
+            Log.i(TAG, "═══ enableEyeUvc START ═══")
+            openUsbDevice()
+
+            val conn =
+                usbConnection ?: run {
+                    Log.e(TAG, "No USB connection")
+                    return@withContext false
+                }
+            val device = usbDevice ?: return@withContext false
+
+            val hidIface =
+                (0 until device.interfaceCount)
+                    .map { device.getInterface(it) }
+                    .firstOrNull { it.interfaceClass == android.hardware.usb.UsbConstants.USB_CLASS_HID }
+                    ?: run {
+                        Log.e(TAG, "No HID interface found")
+                        return@withContext false
+                    }
+
+            conn.claimInterface(hidIface, true)
+            hidInitIface = hidIface
+
+            val epOut =
+                (0 until hidIface.endpointCount)
+                    .map { hidIface.getEndpoint(it) }
+                    .firstOrNull { it.direction == android.hardware.usb.UsbConstants.USB_DIR_OUT }
+                    ?: run {
+                        Log.e(TAG, "No HID OUT endpoint")
+                        return@withContext false
+                    }
+            val epIn: UsbEndpoint? =
+                (0 until hidIface.endpointCount)
+                    .map { hidIface.getEndpoint(it) }
+                    .firstOrNull { it.direction == android.hardware.usb.UsbConstants.USB_DIR_IN }
+
+            val htFrame = buildHidFrame(MSG_W_HOST_TYPE, byteArrayOf(HID_HOST_TYPE_ANDROID.toByte(), 0, 0, 0))
+            conn.bulkTransfer(epOut, htFrame, htFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "Eye: HOST_TYPE=2 sent")
+
+            val vFrame = buildHidFrame(MSG_W_SDK_VERSION, HID_SDK_VERSION.toByteArray(Charsets.US_ASCII) + byteArrayOf(0))
+            conn.bulkTransfer(epOut, vFrame, vFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "Eye: SDK_VERSION sent")
+
+            delay(HID_POST_INIT_DELAY_MS)
+
+            val getFrame = buildHidFrame(MSG_USB_CONFIG_GET, ByteArray(0))
+            conn.bulkTransfer(epOut, getFrame, getFrame.size, HID_TRANSFER_TIMEOUT_MS)
+
+            var currentConfig = 0
+            var gotConfig = false
+            if (epIn != null) {
+                val deadline = System.currentTimeMillis() + GET_RESPONSE_WAIT_MS
+                while (System.currentTimeMillis() < deadline) {
+                    val buf = ByteArray(1024)
+                    val r = conn.bulkTransfer(epIn, buf, buf.size, HID_RESPONSE_TIMEOUT_MS)
+                    if (r < 7) continue
+                    val innerLen = (buf[5].toInt() and 0xFF) or ((buf[6].toInt() and 0xFF) shl 8)
+                    val msgId = (buf[15].toInt() and 0xFF) or ((buf[16].toInt() and 0xFF) shl 8)
+                    if (innerLen > 17 && r >= 26) {
+                        currentConfig =
+                            (buf[22].toInt() and 0xFF) or
+                            ((buf[23].toInt() and 0xFF) shl 8) or
+                            ((buf[24].toInt() and 0xFF) shl 16) or
+                            ((buf[25].toInt() and 0xFF) shl 24)
+                        Log.i(TAG, "Eye GET response: currentConfig=0x${currentConfig.toString(16)} msgId=0x${msgId.toString(16)}")
+                        gotConfig = true
+                        break
+                    }
+                }
+            }
+
+            if (!gotConfig) {
+                Log.w(TAG, "═══ enableEyeUvc END result=false (GET heartbeats — MCU window missed) ═══")
+                return@withContext false
+            }
+
+            val newConfig = currentConfig or UVC_EYE_ENABLE_MASK
+            Log.i(TAG, "Eye SET: 0x${currentConfig.toString(16)} | 0x${UVC_EYE_ENABLE_MASK.toString(16)} → 0x${newConfig.toString(16)}")
+            val setPayload =
+                ByteBuffer
+                    .allocate(4)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .apply { putInt(newConfig) }
+                    .array()
+            val setFrame = buildHidFrame(MSG_USB_CONFIG_SET, setPayload)
+            val sSent = conn.bulkTransfer(epOut, setFrame, setFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "Eye SET sent $sSent/${setFrame.size} — waiting for re-enum")
+
+            if (sSent != setFrame.size) {
+                Log.w(TAG, "═══ enableEyeUvc END result=false (SET transfer failed) ═══")
+                return@withContext false
+            }
+
+            // Post-enable: activate Eye camera hardware
+            delay(200)
+            val rgbEnableFrame = buildHidFrame(MSG_RGB_ENABLE, byteArrayOf(1, 0, 0, 0))
+            conn.bulkTransfer(epOut, rgbEnableFrame, rgbEnableFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "Eye: RGB_ENABLE (0x68) sent")
+
+            val rgbStreamFrame = buildHidFrame(MSG_RGB_STREAM, byteArrayOf(1, 0, 0, 0))
+            conn.bulkTransfer(epOut, rgbStreamFrame, rgbStreamFrame.size, HID_TRANSFER_TIMEOUT_MS)
+            Log.i(TAG, "Eye: RGB_STREAM (0x69) sent")
+
+            Log.i(TAG, "═══ enableEyeUvc END result=true ═══")
+            true
         }
 
     /**

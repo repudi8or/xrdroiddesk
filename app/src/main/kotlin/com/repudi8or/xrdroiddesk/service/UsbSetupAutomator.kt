@@ -44,6 +44,7 @@ class UsbSetupAutomator(
 
     private var cgChooserClickPending = false
     private var cgPermTapped = false
+    private var cgPermDenied = false
     private var cgCameraToggleTapped = false
     private var usbAttachTimestampMs = 0L
     private var tcpEnablePending = false
@@ -141,6 +142,7 @@ class UsbSetupAutomator(
         manifestActivityStarted = false
         cgChooserClickPending = false
         cgPermTapped = false
+        cgPermDenied = false
         cgCameraToggleTapped = false
         usbAttachTimestampMs = 0L
     }
@@ -275,6 +277,7 @@ class UsbSetupAutomator(
         manifestActivityStarted = false
         cgChooserClickPending = false
         cgPermTapped = false
+        cgPermDenied = false
         cgCameraToggleTapped = false
         lastKnownDevice = null
         usbAttachTimestampMs = 0L
@@ -445,7 +448,9 @@ class UsbSetupAutomator(
                 // CG does not need USB Host permission to maintain the display. Allowing it
                 // would start CG's Acceptor, which claims HID iface 0 and sends HOST_TYPE=2
                 // repeatedly, fighting our keepalive and eventually darkening the display.
+                if (cgPermDenied) return
                 val deny = findNegativeButton(dialogRoot) ?: return
+                cgPermDenied = true
                 uiLog("CG permission (UVC/cam phase): DENY tapped (+${elapsed}ms) — blocking Acceptor")
                 deny.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 if (!selfPermPending && uvcPhaseActive) {

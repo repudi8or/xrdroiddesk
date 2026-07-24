@@ -47,6 +47,12 @@ class XRealGlassesCamera(
         const val VENDOR_ID = 0x3318
         const val PRODUCT_ID = 0x0436
 
+        // Eye RGB camera — may enumerate as separate device after uvc1 enable on some phones.
+        // On Pixel 10 Pro it stays on the XREAL composite (same VID/PID, extra VS interface).
+        const val EYE_VENDOR_ID = 0x0817
+        const val EYE_PRODUCT_ID = 0x0909
+        const val EYE_PRODUCT_ID_ALT = 0x0910
+
         private const val TAG = "XRealGlassesCamera"
         private const val UVC_CLASS = 14
         private const val UVC_STREAMING_SUBCLASS = 2
@@ -55,7 +61,7 @@ class XRealGlassesCamera(
         private const val VS_PROBE_CONTROL = 0x0100
         private const val VS_COMMIT_CONTROL = 0x0200
         private const val TIMEOUT_MS = 2000
-        private const val BULK_BUF_SIZE = 16384
+        private const val BULK_BUF_SIZE = 65536 // 64KB: IDR frames are ~24KB; 16KB truncates them
         private const val PILOT_PORT = 50180
 
         // UVC payload header BFH bits
@@ -63,21 +69,40 @@ class XRealGlassesCamera(
         private const val BFH_ERR = 0x40
     }
 
-    fun findDevice(): UsbDevice? {
+    fun findDevice(preferEye: Boolean = false): UsbDevice? {
         val devices = usbManager.deviceList
         Log.d(TAG, "USB devices present: ${devices.size}")
         devices.values.forEach { d ->
             Log.d(TAG, "  ${d.deviceName} VID=0x${d.vendorId.toString(16)} PID=0x${d.productId.toString(16)}")
+        }
+        if (preferEye) {
+            // On some phones the Eye enumerates as a separate device after uvc1 enable
+            val eyeDev =
+                devices.values.firstOrNull {
+                    it.vendorId == EYE_VENDOR_ID &&
+                        (it.productId == EYE_PRODUCT_ID || it.productId == EYE_PRODUCT_ID_ALT)
+                }
+            if (eyeDev != null) {
+                Log.i(
+                    TAG,
+                    "Eye camera found as separate device: VID=0x${eyeDev.vendorId.toString(16)} PID=0x${eyeDev.productId.toString(16)}",
+                )
+                return eyeDev
+            }
+            // On Pixel 10 Pro it stays on the XREAL composite — fall through to find by VID/PID
         }
         return devices.values.firstOrNull { it.vendorId == VENDOR_ID && it.productId == PRODUCT_ID }
     }
 
     fun hasPermission(device: UsbDevice): Boolean = usbManager.hasPermission(device)
 
-    fun open(device: UsbDevice): Boolean {
+    fun open(
+        device: UsbDevice,
+        preferEye: Boolean = false,
+    ): Boolean {
         close() // Ensure any prior session is torn down before opening a new connection
         val iface =
-            findStreamingInterface(device) ?: run {
+            findStreamingInterface(device, preferEye) ?: run {
                 val hasAnyVideoIface =
                     (0 until device.interfaceCount)
                         .any { device.getInterface(it).interfaceClass == UVC_CLASS }
@@ -167,24 +192,36 @@ class XRealGlassesCamera(
         tcpKeepaliveJob = null
     }
 
-    private fun findStreamingInterface(device: UsbDevice): UsbInterface? {
-        Log.d(TAG, "Device has ${device.interfaceCount} interfaces:")
+    // preferEye=true picks the SECOND VideoStreaming interface (xreal1 = Eye RGB camera).
+    // preferEye=false picks the first (xreal0 = built-in stereo camera).
+    private fun findStreamingInterface(
+        device: UsbDevice,
+        preferEye: Boolean = false,
+    ): UsbInterface? {
+        Log.d(TAG, "Device has ${device.interfaceCount} interfaces (preferEye=$preferEye):")
+        val vsInterfaces = mutableListOf<UsbInterface>()
         for (i in 0 until device.interfaceCount) {
             val iface = device.getInterface(i)
             val epSummary =
                 (0 until iface.endpointCount).joinToString {
                     val ep = iface.getEndpoint(it)
-                    "ep$it(type=${ep.type} dir=${ep.direction})"
+                    "ep$it(type=${ep.type} dir=${ep.direction} addr=0x${ep.address.toString(16)})"
                 }
             Log.d(
                 TAG,
                 "  [$i] class=${iface.interfaceClass} sub=${iface.interfaceSubclass}" +
                     " proto=${iface.interfaceProtocol} eps=$epSummary",
             )
+            if (iface.interfaceClass == UVC_CLASS && iface.interfaceSubclass == UVC_STREAMING_SUBCLASS) {
+                vsInterfaces.add(iface)
+            }
         }
-        return (0 until device.interfaceCount)
-            .map { device.getInterface(it) }
-            .firstOrNull { it.interfaceClass == UVC_CLASS && it.interfaceSubclass == UVC_STREAMING_SUBCLASS }
+        Log.i(TAG, "Found ${vsInterfaces.size} VideoStreaming interface(s)")
+        return when {
+            vsInterfaces.isEmpty() -> null
+            preferEye && vsInterfaces.size >= 2 -> vsInterfaces[1] // xreal1 = Eye RGB
+            else -> vsInterfaces[0] // xreal0 = built-in stereo
+        }
     }
 
     private fun findBulkInEndpoint(iface: UsbInterface): UsbEndpoint? {

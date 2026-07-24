@@ -79,7 +79,10 @@ class HandLandmarkerHelper(
         val saveAt = setOf(1L, 100L, 300L, 600L, 1000L)
         if (decodedCount !in saveAt) return
         try {
-            val file = java.io.File("/sdcard/Pictures/xr_frame_$decodedCount.jpg")
+            val dir =
+                context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                    ?: context.filesDir
+            val file = java.io.File(dir, "xr_frame_$decodedCount.jpg")
             file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
             Log.i(TAG, "saved frame #$decodedCount → ${file.absolutePath} (${bitmap.width}x${bitmap.height})")
         } catch (e: Exception) {

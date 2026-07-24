@@ -42,6 +42,13 @@ internal class H264FrameDecoder(
     private val pendingFrame = AtomicReference<ByteArray?>(null)
     private val parkedBufferIdx = AtomicInteger(-1)
 
+    // IDR gating: drop frames until we see an IDR NALU so the decoder always starts clean.
+    @Volatile private var syncNeeded = true
+
+    private val firstFrameLogged =
+        java.util.concurrent.atomic
+            .AtomicBoolean(false)
+
     // Input timestamps must be strictly increasing; output frames are for live tracking
     // so we just use a monotonic counter in µs.
     private val inputTs = AtomicLong(0L)
@@ -67,7 +74,17 @@ internal class H264FrameDecoder(
             ) {
                 if (info.size > 0) {
                     val image = mc.getOutputImage(index)
-                    val bitmap = image?.toScaledBitmap(srcWidth, srcHeight, DST_W, DST_H)
+                    if (image != null && firstFrameLogged.compareAndSet(false, true)) {
+                        val y = image.planes[0]
+                        val uv = image.planes[1]
+                        Log.i(
+                            TAG,
+                            "FRAME_DIMS: ${image.width}x${image.height} " +
+                                "yStride=${y.rowStride} uvStride=${uv.rowStride} uvPixel=${uv.pixelStride} " +
+                                "yBuf=${y.buffer.remaining()} uvBuf=${uv.buffer.remaining()}",
+                        )
+                    }
+                    val bitmap = image?.toScaledBitmap(DST_W, DST_H)
                     image?.close()
                     mc.releaseOutputBuffer(index, false)
                     if (bitmap != null && !closed) {
@@ -103,6 +120,8 @@ internal class H264FrameDecoder(
 
     fun warmUp() {
         if (running || configuring || closed) return
+        syncNeeded = true
+        firstFrameLogged.set(false)
         configuring = true
         Thread(::configureAndStart, "HevcInit").start()
     }
@@ -121,6 +140,19 @@ internal class H264FrameDecoder(
         if (!running) {
             warmUp()
             return
+        }
+        if (syncNeeded) {
+            when {
+                containsNaluOfType(bytes, 19, 20) -> {
+                    syncNeeded = false
+                    Log.i(TAG, "IDR found — sync acquired (${bytes.size}B)")
+                }
+                containsNaluOfType(bytes, 32, 33, 34) -> { /* VPS/SPS/PPS — pass through, still waiting for IDR */ }
+                else -> {
+                    Log.d(TAG, "pre-IDR P-frame dropped (${bytes.size}B)")
+                    return
+                }
+            }
         }
         val idx = parkedBufferIdx.getAndSet(-1)
         if (idx >= 0) {
@@ -184,6 +216,41 @@ internal class H264FrameDecoder(
                 bytes[1] == 0.toByte() &&
                 bytes[2] == 0.toByte() &&
                 bytes[3] == 1.toByte()
+
+        // Scans Annex-B NALUs and returns true if any NALU type matches one of the given types.
+        // HEVC NAL types: IDR_W_RADL=19, IDR_N_LP=20, VPS=32, SPS=33, PPS=34
+        internal fun containsNaluOfType(
+            bytes: ByteArray,
+            vararg types: Int,
+        ): Boolean {
+            var i = 0
+            while (i < bytes.size - 3) {
+                val is4Byte =
+                    bytes[i] == 0.toByte() &&
+                        bytes[i + 1] == 0.toByte() &&
+                        bytes[i + 2] == 0.toByte() &&
+                        bytes[i + 3] == 1.toByte()
+                val is3Byte =
+                    !is4Byte &&
+                        bytes[i] == 0.toByte() &&
+                        bytes[i + 1] == 0.toByte() &&
+                        bytes[i + 2] == 1.toByte()
+                when {
+                    is4Byte && i + 4 < bytes.size -> {
+                        val naluType = (bytes[i + 4].toInt() ushr 1) and 0x3F
+                        if (naluType in types) return true
+                        i += 4
+                    }
+                    is3Byte && i + 3 < bytes.size -> {
+                        val naluType = (bytes[i + 3].toInt() ushr 1) and 0x3F
+                        if (naluType in types) return true
+                        i += 3
+                    }
+                    else -> i++
+                }
+            }
+            return false
+        }
     }
 
     override fun close() {
@@ -199,14 +266,14 @@ internal class H264FrameDecoder(
 }
 
 // Subsample a YUV_420_888 Image directly to dstW×dstH, avoiding a full-resolution JPEG encode.
+// Uses image.width/height so the step is correct even when the decoder outputs a larger
+// coded frame than the configured hint (e.g. 2048x1512 from XReal One Pro).
 private fun android.media.Image.toScaledBitmap(
-    srcW: Int,
-    srcH: Int,
     dstW: Int,
     dstH: Int,
 ): Bitmap? {
-    val xStep = srcW / dstW
-    val yStep = srcH / dstH
+    val xStep = width / dstW
+    val yStep = height / dstH
 
     val yPlane = planes[0]
     val uPlane = planes[1]
@@ -234,12 +301,13 @@ private fun android.media.Image.toScaledBitmap(
         }
     }
 
-    // UV plane — VU interleaved for NV21; UV is half resolution in both dimensions
+    // UV plane — VU interleaved for NV21; UV is half resolution in both dimensions.
+    // UV source row = srcRow / 2 since UV has half the vertical resolution of Y.
     var uvDst = dstW * dstH
     for (row in 0 until dstH / 2) {
-        val srcRow = row * yStep
+        val uvSrcRow = row * yStep
         for (col in 0 until dstW / 2) {
-            val idx = srcRow * uvStride + col * xStep * uvPixelStride
+            val idx = uvSrcRow * uvStride + col * xStep * uvPixelStride
             nv21[uvDst++] = if (idx < vBytes.size) vBytes[idx] else 128.toByte()
             nv21[uvDst++] = if (idx < uBytes.size) uBytes[idx] else 128.toByte()
         }

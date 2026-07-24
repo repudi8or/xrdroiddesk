@@ -175,6 +175,10 @@ class MainActivity : AppCompatActivity() {
         fun finishAll() {
             activeInstances.toList().forEach { it.finish() }
         }
+
+        fun appendToAll(msg: String) {
+            activeInstances.toList().forEach { it.appendLog(msg) }
+        }
     }
 
     override fun onDestroy() {

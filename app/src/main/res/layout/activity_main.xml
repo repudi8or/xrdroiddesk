@@ -39,6 +39,7 @@
             android:fontFamily="monospace"
             android:lineSpacingMultiplier="1.2"
             android:textColor="#CCFFCC"
+            android:textIsSelectable="true"
             android:textSize="11sp" />
 
     </ScrollView>
