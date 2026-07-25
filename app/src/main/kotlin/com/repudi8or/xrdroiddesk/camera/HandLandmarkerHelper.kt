@@ -45,8 +45,9 @@ class HandLandmarkerHelper(
             H264FrameDecoder { bitmap ->
                 val count = decodedCount.incrementAndGet()
                 val corrected = rotateBitmap(bitmap)
-                maybeSaveFrame(corrected, count)
-                val mpImage = BitmapImageBuilder(corrected).build()
+                val enhanced = enhanceLowLight(corrected)
+                maybeSaveFrame(enhanced, count)
+                val mpImage = BitmapImageBuilder(enhanced).build()
                 landmarker.detectAsync(mpImage, System.currentTimeMillis())
             }
     }
@@ -70,7 +71,51 @@ class HandLandmarkerHelper(
         h264Decoder.close()
     }
 
-    private fun rotateBitmap(bitmap: Bitmap): Bitmap = bitmap
+    private fun rotateBitmap(bitmap: Bitmap): Bitmap {
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(270f)
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    // Lift shadows for low-light environments via a 3.5× linear brightness boost.
+    // ColorMatrixColorFilter runs on the GPU via Canvas — no per-pixel loop.
+    private fun enhanceLowLight(bitmap: Bitmap): Bitmap {
+        val out = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(out)
+        val scale = 3.5f
+        val paint =
+            android.graphics.Paint().apply {
+                colorFilter =
+                    android.graphics.ColorMatrixColorFilter(
+                        android.graphics.ColorMatrix(
+                            floatArrayOf(
+                                scale,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                scale,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                scale,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                0f,
+                                1f,
+                                0f,
+                            ),
+                        ),
+                    )
+            }
+        canvas.drawBitmap(bitmap, 0f, 0f, paint)
+        return out
+    }
 
     private fun maybeSaveFrame(
         bitmap: Bitmap,

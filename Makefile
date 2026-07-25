@@ -126,6 +126,22 @@ endif
 adb-wifi-disconnect:  ## Disconnect WiFi ADB
 	$(ADB) disconnect
 
+# ── Device setup ─────────────────────────────────────────────────────────────
+
+.PHONY: setup-device
+setup-device:  ## Grant runtime permissions, Doze exemption, revoke CG camera — run once after install
+	$(ADB) shell pm grant $(APP_ID) android.permission.CAMERA
+	$(ADB) shell pm grant $(APP_ID) android.permission.POST_NOTIFICATIONS
+	$(ADB) shell dumpsys deviceidle whitelist +$(APP_ID)
+	$(ADB) shell pm revoke $(CG_PKG) android.permission.CAMERA
+	@echo ""
+	@echo "Permissions granted. One manual step remains:"
+	@echo "  Settings → Accessibility → Downloaded apps → xrdroiddesk → Enable"
+
+.PHONY: restore-cg-camera
+restore-cg-camera:  ## Restore Camera permission to Glasses Control (undo setup-device)
+	$(ADB) shell pm grant $(CG_PKG) android.permission.CAMERA
+
 # ── Accessibility service ─────────────────────────────────────────────────────
 
 .PHONY: accessibility-check

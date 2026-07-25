@@ -117,6 +117,9 @@ class CursorOverlay(
         handler.post(applyUpdate)
     }
 
+    /** True once addView has succeeded at least once — overlay is live on the display. */
+    fun isHealthy(): Boolean = added
+
     fun close() {
         handler.post {
             if (added) {

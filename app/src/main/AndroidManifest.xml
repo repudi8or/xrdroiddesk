@@ -24,6 +24,13 @@
         </activity>
 
         <activity
+            android:name=".GlassesWakeActivity"
+            android:theme="@style/Theme.GlassesWake"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <activity
             android:name=".GrantUsbPermissionActivity"
             android:exported="true"
             android:excludeFromRecents="true"

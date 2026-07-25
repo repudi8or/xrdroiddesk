@@ -66,14 +66,18 @@ class GestureAccessibilityService : AccessibilityService() {
     // Tracks which display we last launched on; prevents duplicate launches per plug cycle.
     private var lastLaunchedDisplayId = Display.INVALID_DISPLAY
 
+    // Display ID of the current glasses display; used by retryCreateCursorOverlay to detect removal.
+    private var glassesDisplayId = Display.INVALID_DISPLAY
+
     private val displayListener =
         object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) {
                 Log.d(TAG, "onDisplayAdded: id=$displayId")
                 if (displayId != Display.DEFAULT_DISPLAY) {
-                    uiLog("glasses display $displayId appeared — cursor overlay ready")
-                    cursorOverlay?.close()
-                    cursorOverlay = CursorOverlay(this@GestureAccessibilityService, displayId)
+                    glassesDisplayId = displayId
+                    uiLog("glasses display $displayId appeared — launching wake activity")
+                    launchGlassesWakeActivity(displayId)
+                    serviceScope.launch { retryCreateCursorOverlay(displayId) }
                     val cam = camera
                     if (cam != null && !cam.isOpen && !usbSetup.hidEnablePending) {
                         Log.d(TAG, "onDisplayAdded: external display appeared — calling tryConnectCamera()")
@@ -87,6 +91,7 @@ class GestureAccessibilityService : AccessibilityService() {
                 if (displayId != Display.DEFAULT_DISPLAY) {
                     cursorOverlay?.close()
                     cursorOverlay = null
+                    glassesDisplayId = Display.INVALID_DISPLAY
                 }
             }
 
@@ -167,8 +172,10 @@ class GestureAccessibilityService : AccessibilityService() {
         val existingExternal = dm.displays.filter { it.displayId != Display.DEFAULT_DISPLAY }
         if (existingExternal.isNotEmpty()) {
             val d = existingExternal.first()
-            Log.d(TAG, "onServiceConnected: external display ${d.displayId} already present — creating cursor overlay")
-            cursorOverlay = CursorOverlay(this, d.displayId)
+            glassesDisplayId = d.displayId
+            Log.d(TAG, "onServiceConnected: external display ${d.displayId} already present — launching wake activity")
+            launchGlassesWakeActivity(d.displayId)
+            serviceScope.launch { retryCreateCursorOverlay(d.displayId) }
         }
         val usbFilter =
             IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED).apply {
@@ -364,29 +371,36 @@ class GestureAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun launchOnGlassesDisplay() {
-        val dm = getSystemService(DisplayManager::class.java)
-        val allDisplays = dm.displays
-        val glassesDisplay = allDisplays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
-        if (glassesDisplay == null) {
-            Log.d(TAG, "launchOnGlassesDisplay: no external display — skipping")
-            return
-        }
-        if (lastLaunchedDisplayId == glassesDisplay.displayId) {
-            Log.d(TAG, "launchOnGlassesDisplay: already launched on display ${glassesDisplay.displayId} — skipping")
-            return
-        }
-        lastLaunchedDisplayId = glassesDisplay.displayId
+    // Launch a transparent, non-interactive activity on the glasses display.
+    // This forces Android's WindowManager to set up DisplayContent token infrastructure for
+    // that display, which allows subsequent createWindowContext() calls to return a valid token.
+    private fun launchGlassesWakeActivity(displayId: Int) {
         val intent =
-            Intent(this, com.repudi8or.xrdroiddesk.MainActivity::class.java).apply {
+            Intent(this, com.repudi8or.xrdroiddesk.GlassesWakeActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-        val options = ActivityOptions.makeBasic().setLaunchDisplayId(glassesDisplay.displayId)
+        val opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId)
         try {
-            startActivity(intent, options.toBundle())
-            uiLog("xrdroiddesk launched on display ${glassesDisplay.displayId} (${glassesDisplay.name})")
+            startActivity(intent, opts.toBundle())
+            Log.d(TAG, "launchGlassesWakeActivity: launched on display $displayId")
         } catch (e: Exception) {
-            uiLog("could not auto-launch on glasses: ${e.message}")
+            Log.w(TAG, "launchGlassesWakeActivity: failed: ${e.message}")
+        }
+    }
+
+    // Retry CursorOverlay creation until addView succeeds (overlay is live).
+    // Each attempt creates a fresh createWindowContext — once the wake activity is visible
+    // on the display, the WM will have a valid token and addView will succeed.
+    private suspend fun retryCreateCursorOverlay(displayId: Int) {
+        repeat(10) { attempt ->
+            delay(if (attempt == 0) 600L else 800L)
+            if (glassesDisplayId != displayId) return
+            if (cursorOverlay?.isHealthy() == true) return
+            Log.d(TAG, "retryCreateCursorOverlay: attempt ${attempt + 1} for display $displayId")
+            cursorOverlay?.close()
+            val overlay = CursorOverlay(this@GestureAccessibilityService, displayId)
+            cursorOverlay = overlay
+            overlay.update(mapper.x, mapper.y, false)
         }
     }
 

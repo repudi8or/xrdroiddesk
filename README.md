@@ -100,15 +100,31 @@ make install          # builds + installs via adb
 make install DEVICE=192.168.x.x:PORT
 ```
 
-### 4. Grant permissions
+### 4. Grant permissions and exempt from Doze
 
-After install, grant the camera permission (required on Android 16+ for USB Host UVC access):
+Run once after install — sets runtime permissions, exempts the app from battery optimization (prevents background kills during long sessions), and revokes Camera from Glasses Control to reduce its Android 16 lifecycle aggression:
 
 ```bash
-adb shell pm grant com.repudi8or.xrdroiddesk android.permission.CAMERA
+make setup-device          # recommended: runs all commands below in one shot
 ```
 
-Or grant it through the in-app prompt when you first launch.
+Or individually:
+
+```bash
+# Camera — required on Android 16+ for USB Host UVC access
+adb shell pm grant com.repudi8or.xrdroiddesk android.permission.CAMERA
+
+# Notifications — used for "glasses disconnected" and watchdog alerts
+adb shell pm grant com.repudi8or.xrdroiddesk android.permission.POST_NOTIFICATIONS
+
+# Doze exemption — prevents Android from killing capture in the background
+adb shell dumpsys deviceidle whitelist +com.repudi8or.xrdroiddesk
+
+# Revoke Camera from Glasses Control — reduces CG's Pause/Resume aggression on Android 16
+# (CG's HID USB channel is unaffected; this only stops CG from starting its own camera pipeline)
+adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
+# To restore: make restore-cg-camera
+```
 
 ### 5. Enable the accessibility service
 
@@ -164,19 +180,23 @@ make logcat          # stream filtered logs for this app
 ### Useful ADB commands
 
 ```bash
+# One-shot post-install setup (permissions + Doze exemption + CG camera revoke)
+make setup-device
+
+# Restore Camera permission to Glasses Control
+make restore-cg-camera
+
 # Stream logs (filtered to this app)
 make logcat
 
 # Check accessibility service status
 make accessibility-check
 
-# Clear USB permissions (forces fresh permission dialogs)
-adb shell pm clear com.xreal.glassescontrol.store
+# USB permission diagnostics
+make usb-permission-status
 
-# Revoke Camera from Glasses Control (reduces lifecycle interference during dev)
-adb shell pm revoke com.xreal.glassescontrol.store android.permission.CAMERA
-# Restore when done:
-adb shell pm grant com.xreal.glassescontrol.store android.permission.CAMERA
+# Clear USB permissions (forces fresh permission dialogs on next plug)
+adb shell pm clear com.xreal.glassescontrol.store
 ```
 
 See `Makefile` for the full list of dev commands (`make help`).
